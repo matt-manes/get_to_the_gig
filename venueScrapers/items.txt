@@ -1,0 +1,8 @@
+eventDate
+title
+acts
+price
+eventLink
+actLinks
+info
+genres

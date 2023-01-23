@@ -1,0 +1,13 @@
+*.bat
+ebjson.json
+*.log
+*.png
+siteIdeas.txt
+actsILike.txt
+__pycache__
+logs
+temp
+bugs.txt
+crash_tracker.json
+scrapeReport.json
+reset_events.py
