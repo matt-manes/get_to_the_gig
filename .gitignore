@@ -11,3 +11,5 @@ bugs.txt
 crash_tracker.json
 scrapeReport.json
 reset_events.py
+dbscratch_pad.py
+.vscode
