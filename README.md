@@ -6,7 +6,7 @@ so you can find something to do without having to check all the websites yoursel
 Requires Python >= 3.10<br>
 Some of the scrapers require the use of selenium so Firefox and the appropriate web driver needs to be installed as well.<br>
 The web driver should be in your PATH or in the getToTheGig directory.<br>
-It can be obtained here: https://github.com/mozilla/geckodriver/releases <br>
+It can be obtained [here](https://github.com/mozilla/geckodriver/releases) <br>
 <br>
 After cloning this repository, run the setup.py script.<br>
 Currently all the venues in shows.db are local to Chicago, IL.<br>
