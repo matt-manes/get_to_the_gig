@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import json
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -62,7 +63,7 @@ def run_scrapers():
     scrapers = [
         importlib.import_module(str(scraper.stem)).Scraper()
         for scraper in scraper_files
-        if "#notReady" not in scraper.read_text()
+        if "#notReady" and "# notReady" not in scraper.read_text()
     ]
     bar = ProgBar(len(scrapers))
     timer = Timer()
@@ -100,6 +101,15 @@ def run_scrapers():
         (root / "scrapeReport.json").write_text(json.dumps(deets, indent=2))
         update_consecutive_crash_tracker(results)
         print(json.dumps(deets, indent=2))
+    print("Committing and syncing shows.db to Github...")
+    for cmd in [
+        "git add shows.db",
+        'git commit shows.db -m "chore: push shows.db update"',
+        "git pull origin main",
+        "git push origin main:main",
+    ]:
+        os.system(cmd)
+    print("Sync complete.")
     input("...")
 
 
