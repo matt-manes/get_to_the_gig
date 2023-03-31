@@ -1,7 +1,7 @@
-bs4==0.0.1
-databased==1.0.1
-noiftimer==1.0.1
-printbuddies==1.0.0
-requests==2.28.1
-seleniumuser==1.0.0
-whosyouragent==1.0.3
+bs4
+databased
+noiftimer
+printbuddies
+requests
+seleniumuser
+whosyouragent
