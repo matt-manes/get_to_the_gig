@@ -76,13 +76,13 @@ def run_scrapers():
                 [scraper for scraper in scrapers_to_run if scraper.done()]
             )
             bar.display(
-                prefix=f"elapsed time: {timer.current_elapsed_time()}",
+                prefix=f"elapsed time: {timer.elapsed_str}",
                 counter_override=num_complete,
             )
             time.sleep(1)
         num_complete = len([scraper for scraper in scrapers_to_run if scraper.done()])
         bar.display(
-            prefix=f"{num_complete=} elapsed time: {timer.current_elapsed_time()}",
+            prefix=f"{num_complete=} elapsed time: {timer.elapsed_str}",
             counter_override=num_complete,
         )
         print()
@@ -91,7 +91,7 @@ def run_scrapers():
         deets = {
             "startTime": str(start_time),
             "endTime": str(end_time),
-            "elapsedTime": timer.current_elapsed_time(),
+            "elapsedTime": timer.elapsed_str,
         }
         results = {
             scraper.scraper_path.stem: scraper.scrape_successful for scraper in scrapers
