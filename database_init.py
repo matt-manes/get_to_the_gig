@@ -5,7 +5,7 @@ def initialize():
     with DataBased("shows.db") as db:
         db.create_tables(
             [
-                "events(date timestamp unique,\
+                "events(date timestamp,\
                         venue text,\
                         title text,\
                         acts text,\
@@ -23,4 +23,5 @@ def initialize():
 
 if __name__ == "__main__":
     with DataBased("shows.db") as db:
-        initialize()
+        db.drop_table("events")
+    initialize()
