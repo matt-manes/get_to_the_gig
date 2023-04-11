@@ -63,7 +63,7 @@ def run_scrapers():
     scrapers = [
         importlib.import_module(str(scraper.stem)).Scraper()
         for scraper in scraper_files
-        if "#notReady" and "# notReady" not in scraper.read_text()
+        if "# not_ready" not in scraper.read_text()
     ]
     bar = ProgBar(len(scrapers))
     timer = Timer()
