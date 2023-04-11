@@ -1,4 +1,5 @@
 import argparse
+import shlex
 import sys
 from pathlib import Path
 
@@ -30,7 +31,7 @@ def get_args(command: str) -> argparse.Namespace:
 
     parser.add_argument(
         "-db",
-        "--db_name",
+        "--dbname",
         type=str,
         default=None,
         help="""Name of database file to use.
@@ -106,21 +107,36 @@ def get_args(command: str) -> argparse.Namespace:
         "--update",
         type=str,
         default=None,
-        nargs=2,
+        nargs="*",
         help=""" Update a record in the database.
-        Expects two arguments: the current value and the new value.
+        Expects the first argument to be the new value and interprets
+        subsequent arguements as pairs of 'column' and 'value' to use
+        when selecting which rows to update. The -c/--columns arg will
+        be the column that is updated with the new value for matching rows.
         A -c/--columns arg must be supplied.
-        A -t/--tables arg must be supplied.""",
+        A -t/--tables arg must be supplied.
+        e.g '-t birds -c last_seen -u today name sparrow migratory 0'
+        will update the 'last_seen' column of the 'birds' table to 'today'
+        for all rows that have either/both of their 'name' and 'migratory'
+        columns set to 'sparrow' and '0', respectively.""",
     )
 
     parser.add_argument(
         "-sb", "--sort_by", type=str, default=None, help="Column to sort results by."
     )
 
+    parser.add_argument(
+        "-q",
+        "--query",
+        type=str,
+        default=None,
+        help=""" Directly execute a query against the database. """,
+    )
+
     args = parser.parse_args(command)
 
-    if args.db_name and not Path(args.db_name).exists():
-        raise Exception(f"{args.db_name} does not exist.")
+    if args.dbname and not Path(args.dbname).exists():
+        raise Exception(f"{args.dbname} does not exist.")
 
     return args
 
@@ -162,7 +178,11 @@ def find():
         else:
             print(f"{len(results)} results for '{args.find}' in '{table}' table:")
         if not args.show_count_only:
-            print(data_to_string(results))
+            try:
+                print(data_to_string(results))
+            except Exception as e:
+                print("Couldn't fit data into a grid.")
+                print(*results, sep="\n")
         print()
 
 
@@ -197,18 +217,26 @@ def update():
         raise ValueError("Missing -c/--columns arg for -u/--update function.")
     print("Updating record... ")
     print()
+    new_value = args.update[0]
+    if len(args.update) > 1:
+        args.update = args.update[1:]
+        match_criteria = [
+            (args.update[i], args.update[i + 1]) for i in range(0, len(args.update), 2)
+        ]
+    else:
+        match_criteria = None
     if db.update(
         args.tables[0],
         args.columns[0],
-        args.update[1],
-        [(args.columns[0], args.update[0])],
+        new_value,
+        match_criteria,
     ):
         print(
-            f"Updated '{args.columns[0]}' column from '{args.update[0]}' to '{args.update[1]}' in '{args.tables[0]}' table."
+            f"Updated '{args.columns[0]}' column to '{new_value}' in '{args.tables[0]}' table for match_criteria {match_criteria}."
         )
     else:
         print(
-            f"Failed to update '{args.columns[0]}' column from '{args.update[0]}' to '{args.update[1]}' in '{args.tables[0]}' table."
+            f"Failed to update '{args.columns[0]}' column to '{new_value}' in '{args.tables[0]}' table for match_criteria {match_criteria}."
         )
 
 
@@ -221,15 +249,25 @@ def print_table():
         print(data_to_string(rows))
 
 
+def query():
+    results = db.query(args.query)
+    try:
+        for result in results:
+            print(*result, sep=" * ")
+    except Exception as e:
+        print(f"Couldn't display results of '{args.query}'.")
+
+
 if __name__ == "__main__":
     sys.tracebacklimit = 0
+    dbname = "shows.db"
     while True:
         try:
-            command = input("Enter command: ").split()
+            command = shlex.split(input("Enter command: "))
             args = get_args(command)
-            if args.db_name:
-                db_name = args.db_name
-            with DataBased(db_path=db_name) as db:
+            if args.dbname:
+                dbname = args.dbname
+            with DataBased(dbpath=dbname) as db:
                 if args.info:
                     info()
                 elif args.find:
@@ -238,6 +276,8 @@ if __name__ == "__main__":
                     delete()
                 elif args.update:
                     update()
+                elif args.query:
+                    query()
                 else:
                     print_table()
         except KeyboardInterrupt:
