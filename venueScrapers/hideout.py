@@ -3,7 +3,7 @@ from pathlib import Path
 
 from gig_scraper_engine import GigScraper, get_soup, get_text
 
-
+# not_ready
 # https://hideoutchicago.com/events/
 class Scraper(GigScraper):
     def __init__(self):
