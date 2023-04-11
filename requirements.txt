@@ -1,6 +1,7 @@
 bs4
 databased
 noiftimer
+pathier
 printbuddies
 requests
 seleniumuser
