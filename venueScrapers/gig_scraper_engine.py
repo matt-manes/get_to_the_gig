@@ -156,7 +156,7 @@ class GigScraper:
             self.event_date = self.event_date.replace(year=self.today.year + 1)
 
     def log_success(self):
-        self.logger.info(f"Scrape completed in {self.timer.current_elapsed_time()}")
+        self.logger.info(f"Scrape completed in {self.timer.elapsed_str}")
         self.scrape_successful = True
 
     def scrape(self):
