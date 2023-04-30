@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from databased import DataBased
+from gitbetter import git
 from noiftimer import Timer
 from printbuddies import ProgBar
 
@@ -102,13 +103,8 @@ def run_scrapers():
         update_consecutive_crash_tracker(results)
         print(json.dumps(deets, indent=2))
     print("Committing and syncing shows.db to Github...")
-    for cmd in [
-        "git add shows.db",
-        'git commit shows.db -m "chore: push shows.db update"',
-        "git pull origin main",
-        "git push origin main:main",
-    ]:
-        os.system(cmd)
+    git.commit_files(["shows.db"], "chore: push shows.db update")
+    git.push()
     print("Sync complete.")
     input("...")
 
