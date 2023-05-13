@@ -5,6 +5,7 @@ from pathlib import Path
 from databased import DataBased, data_to_string
 
 from clear_old_events import clear_old_events
+from griddle import griddy
 
 root = Path(__file__).parent
 
@@ -103,7 +104,10 @@ if __name__ == "__main__":
     with DataBased("shows.db") as db:
         if not args.venues:
             future_events = db.get_rows(
-                "events", [("in_the_future", 1)], columns_to_return=columns_to_return
+                "events",
+                [("in_the_future", 1)],
+                columns_to_return=columns_to_return,
+                order_by=args.sort_by,
             )
         else:
             future_events = [
@@ -113,6 +117,7 @@ if __name__ == "__main__":
                     "events",
                     [("in_the_future", 1), ("venue", venue)],
                     columns_to_return=columns_to_return,
+                    order_by=args.sort_by,
                 )
             ]
     filtered_events = []
@@ -128,6 +133,6 @@ if __name__ == "__main__":
             filtered_events.append(event)
 
     if filtered_events:
-        print(data_to_string(filtered_events, sort_key=args.sort_by))
+        print(griddy(filtered_events, headers="keys"))
     else:
         print("Nothing happening :(")
