@@ -1,7 +1,6 @@
 import argparse
 import importlib
 import json
-import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -9,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from databased import DataBased
-from gitbetter import git
+from gitbetter import Git
 from noiftimer import Timer
 from printbuddies import ProgBar
 
@@ -103,6 +102,7 @@ def run_scrapers():
         update_consecutive_crash_tracker(results)
         print(json.dumps(deets, indent=2))
     print("Committing and syncing shows.db to Github...")
+    git = Git()
     git.commit_files(["shows.db"], "chore: push shows.db update")
     git.push()
     print("Sync complete.")
