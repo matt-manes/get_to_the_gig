@@ -1,10 +1,11 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+import re
+import requests
+from whosyouragent import get_agent
 
-from get_eventbrite_event_info import get_event_info
-from gig_scraper_engine import GigScraper
-from seleniumuser import User
+from gig_scraper_engine import GigScraper, get_page
 
 
 # https://cobralounge.com/events/
@@ -12,66 +13,48 @@ class Scraper(GigScraper):
     def __init__(self):
         super().__init__(Path(__file__))
 
+    def get_events(self) -> dict:
+        page = get_page(self.venue_info["calendar_url"]).text
+        api_key = re.findall(r'"apiKey":"[a-zA-Z0-9]+"', page)[0]
+        api_key = api_key.split(":")[1].strip('"')
+        response = requests.get(
+            "https://events-api.dice.fm/v1/events?page[size]=100&types=linkout,event&filter[venues][]=Cobra%20Lounge",
+            headers={"user-agent": get_agent(), "x-api-key": api_key},
+        )
+        return response.json()["data"]
+
     def scrape(self):
         self.logger.info("Scrape started")
-        user = User(headless=True)
         try:
-            user.get(self.venue_info["calendar_url"])
-            try:
-                user.click("//button[@type='button']")
-            except:
-                pass
-            soup = user.get_soup()
-            dice_event_list = soup.find("div", class_="dice-widget").div.div.find_all(
-                "script", attrs={"type": "application/ld+json"}
-            )
-            non_dice_event_list = [
-                event for event in soup.find_all("article") if not event.find("script")
-            ]
-            for event in dice_event_list:
-                deets = json.loads(event.text)[0]
+            events = self.get_events()
+            for event in events:
+                if not event["raw_description"]:
+                    continue
                 self.reset_event_details()
-                try:
-                    self.event_date = datetime.strptime(
-                        deets["startDate"], "%Y-%m-%dT%H:%M:%SZ"
+                # The dates listed in a timezone that's +5 hours
+                self.event_date = datetime.strptime(
+                    event["date"], "%Y-%m-%dT%H:%M:%SZ"
+                ) - timedelta(hours=5)
+                self.title = event["name"]
+                self.acts = ", ".join(event["artists"])
+                if event["ticket_types"]:
+                    self.price = (
+                        f"${event['ticket_types'][0]['price']['total']/100:.2f}"
                     )
-                except Exception as e:
-                    pass
-                try:
-                    self.title = deets["name"]
-                except:
-                    pass
-                try:
-                    self.acts = "\n".join(p["name"] for p in deets["performers"])
-                except:
-                    pass
-                try:
-                    self.price = "$" + str(deets["offers"][0]["price"])
-                except:
-                    pass
-                try:
-                    self.event_link = deets["offers"][0]["url"]
-                except:
-                    pass
-                try:
-                    self.info = deets["description"]
-                except:
-                    pass
-                self.add_event()
-            for event in non_dice_event_list:
-                self.reset_event_details()
-                self.event_link = event.div.div.div.a.get("href")
-                event_info = get_event_info(self.event_link)
-                self.event_date = event_info["date"]
-                self.title = event_info["name"]
-                self.acts = self.title
-                self.price = event_info["price"]
-                self.info = event_info["description"]
+                else:
+                    try:
+                        self.price = f"${event['price']/100:.2f}"
+                    except Exception as e:
+                        self.price = "n/a"
+                self.event_link = event["url"]
+                self.info = event["age_limit"]
+                self.genres = ", ".join(
+                    tag.split(":")[1] for tag in event["genre_tags"]
+                )
                 self.add_event()
             self.log_success()
         except:
-            self.logger.exception("Scrape failed")
-        user.close_browser()
+            self.logger.exception(f"Scrape failed\n{json.dumps(event)}")
 
 
 if __name__ == "__main__":
