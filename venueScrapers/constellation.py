@@ -1,51 +1,50 @@
+import json
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
+from bs4 import Tag
 
-from gig_scraper_engine import GigScraper, get_soup, get_text
+from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
 
 
 class Scraper(GigScraper):
     def __init__(self):
         super().__init__(Path(__file__))
 
+    def get_event_list(self) -> Iterable[list[Tag]]:
+        page = 1
+        while True:
+            soup = get_soup(f"{self.venue_info['calendar_url']}?sepage={page}")
+            events = soup.find_all(
+                "div",
+                class_="event-info-block",
+            )
+            if not events:
+                break
+            yield events
+            page += 1
+
     def scrape(self):
         self.logger.info("Scrape started")
         try:
-            soup = get_soup(self.venue_info["calendar_url"])
-            event_list = [
-                soup.find("div", attrs={"id": "seetickets"}).findChild("article"),
-                *soup.find("div", attrs={"id": "seetickets"})
-                .findChild("article")
-                .find_next_siblings("article"),
+            events = [
+                event for event_list in self.get_event_list() for event in event_list
             ]
-            for event in event_list:
+
+            for event in events:
                 self.reset_event_details()
-                event_link = event.find("a").get("href")
-                date = get_text(
-                    event.find("div", class_="detail detail_event_date").find(
-                        "div", class_="name"
-                    )
-                )
-                time = get_text(
-                    event.find("div", class_="detail detail_event_time").find(
-                        "div", class_="name"
-                    )
-                )
                 self.event_date = datetime.strptime(
-                    f"{self.today.year} {date} {time}", "%Y %a %b %d %I:%M %p"
+                    f"{event.find('p', class_='fs-18 bold mt-1r date').text}-{event.find('span',class_='see-showtime').text}",
+                    "%a %b %d-%H:%M%p",
                 )
-                self.check_event_date_year()
-                self.title = get_text(event.find("h1", class_="event-name headliners"))
+                self.event_date = self.event_date.replace(year=datetime.now().year)
+                if (datetime.now() - self.event_date).days > 30:
+                    self.event_date.replace(year=datetime.now().year + 1)
+                self.title = event.find("a").text
                 self.acts = self.title
-                try:
-                    self.price = get_text(
-                        event.find("div", class_="detail detail_price_range").find(
-                            "div", class_="name"
-                        )
-                    )
-                except:
-                    pass
-                self.event_link = event_link
+                self.price = event.find("p", class_="fs-12 ages-price").text
+                self.event_link = event.find("a").get("href")
+                self.genres = event.find("p", class_="fs-12 genre").text
                 self.add_event()
             self.log_success()
         except:
