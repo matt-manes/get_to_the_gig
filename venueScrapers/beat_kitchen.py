@@ -1,9 +1,11 @@
 import datetime
 from pathlib import Path
+import re
+import json
 
-from gig_scraper_engine import GigScraper, get_soup, get_text
+from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
 
-
+# https://www.beatkitchen.com/calendar/
 class Scraper(GigScraper):
     def __init__(self):
         super().__init__(Path(__file__))
@@ -12,41 +14,43 @@ class Scraper(GigScraper):
         self.logger.info("Scrape started")
         try:
             url = self.venue_info["calendar_url"]
-            soup = get_soup(url)
-
-            num_pages = int(
-                soup.find("span", class_="tw-paginate-text")
-                .find_all("span", class_="link")[-1]
-                .text
+            response = get_page(url)
+            src = response.text
+            # There's a script tag with all the calendar elements in a list of dictionaries format
+            events = re.findall(r"events: \[[^\]]+\]", src)[0]
+            # Fix all the quotes so json module can load it
+            events = (
+                events[events.find(":") + 1 :].replace('"', '\\"').replace("'", '"')
             )
-            for page in range(num_pages):
-                if page != 0:
-                    soup = get_soup(f"{url}?twpage={page}")
-                events = soup.find_all("div", class_="six columns")
-                for event in events:
-                    self.reset_event_details()
-                    self.title = event.div.a.get("href")
-                    self.event_link = event.div.a.get("href")
-                    date_string = event.find("span", class_="tw-event-date").text
-                    time_string = event.find("span", class_="tw-event-time").text
-                    self.event_date = datetime.datetime.strptime(
-                        f"{date_string} {time_string}", "%B %d, %Y %I:%M %p"
+            events = [event.strip() for event in events.splitlines()]
+            # None of the dict keys are quoted
+            for i, event in enumerate(events):
+                if not event.startswith(("{", "}", "[", "]")):
+                    key, value = event.split(":", 1)
+                    events[i] = f'"{key}":{value}'
+            # Last curly brace has a trailing comma
+            events[-2] = "}"
+            events = "\n".join(events)
+            events = json.loads(events)
+            for event in events:
+                self.reset_event_details()
+                self.event_date = datetime.datetime.strptime(
+                    event["start"], "%Y-%m-%d %H:%M:%S"
+                )
+                if datetime.datetime.now() < self.event_date:
+                    self.title = event["title"]
+                    self.acts = event["title"]
+                    url = f"https://www.beatkitchen.com/event-details/{event['id']}"
+                    soup = get_soup(url)
+                    print(url)
+                    self.genres = soup.find("div", class_="tw-genre").text
+                    self.info = soup.find("div", class_="tw-age-restriction").text
+                    price = soup.find("div", class_="tw-price")
+                    self.price = price.text if price else "Free"
+                    self.event_link = (
+                        soup.find("div", class_="tw-buy-box").find("a").get("href")
                     )
-                    self.price = get_text(event.find("span", class_="tw-price"))
-                    soup = get_soup(self.event_link)
-                    self.acts = "\n".join(
-                        ele.text
-                        for ele in soup.find("div", class_="tw-opening-act").find_all(
-                            "span"
-                        )
-                    )
-                    self.genres = soup.find("div", class_="tw-genre").text.strip()
-                    self.info = get_text(soup.find("div", class_="tw-description"))
-                    self.info = (
-                        get_text(soup.find("div", class_="tw-age-restriction"))
-                        + "\n"
-                        + self.info
-                    )
+                    self.event_link = self.event_link[: self.event_link.find("?")]
                     self.add_event()
             self.log_success()
         except Exception as e:
