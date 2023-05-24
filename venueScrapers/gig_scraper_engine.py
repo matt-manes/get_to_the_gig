@@ -27,10 +27,12 @@ def get_text(element: element.Tag | element.NavigableString, clean: bool = True)
         return ""
 
 
+def get_page(url: str) -> requests.Response:
+    return requests.get(url, headers={"User-Agent": get_agent()})
+
+
 def get_soup(url: str) -> BeautifulSoup:
-    return BeautifulSoup(
-        requests.get(url, headers={"User-Agent": get_agent()}).text, "html.parser"
-    )
+    return BeautifulSoup(get_page(url).text, "html.parser")
 
 
 class GigScraper:
