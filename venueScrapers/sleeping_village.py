@@ -23,7 +23,7 @@ class Scraper(GigScraper):
                 self.event_date = datetime.datetime.strptime(
                     event["dateTime"], "<span>%a, %b %d %H:%M%p<span>"
                 )
-                self.event_date.replace(year=2023)
+                self.event_date = self.event_date.replace(year=2023)
                 self.check_event_date_year()
                 self.title = event["title"]
                 if "lineup" in event:
