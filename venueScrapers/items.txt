@@ -1,8 +1,8 @@
-eventDate
+event_date
 title
 acts
 price
-eventLink
-actLinks
+event_link
+act_links
 info
 genres
