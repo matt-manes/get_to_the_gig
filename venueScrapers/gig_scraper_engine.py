@@ -1,6 +1,7 @@
-import datetime
+from datetime import datetime, timedelta
 import logging
 from pathlib import Path
+from typing import Iterable
 import requests
 
 from bs4 import BeautifulSoup, element
@@ -58,7 +59,7 @@ class GigScraper:
         self.db.close()
         self.timer = Timer()
         self.timer.start()
-        self.today = datetime.datetime.now()
+        self.today = datetime.now()
         self.date_added = self.today
         self.venue = self.venue_info["name"]
         self.scrape_successful = False
@@ -160,6 +161,24 @@ class GigScraper:
     def log_success(self):
         self.logger.info(f"Scrape completed in {self.timer.elapsed_str}")
         self.scrape_successful = True
+
+    def get_squarespace_calendar(self, collection_id: str) -> Iterable[dict]:
+        """Generator that yields a dictionary of event details for venues
+        using the squarespace endpoing `{venue_website}/api/open/GetItemsByMonth`.
+
+        `collection_id` should be rendered somewhere in the calendar HTML."""
+        date = datetime.now()
+        counter = 0
+        while True:
+            month_year = f"{date:%m-%Y}"
+            url = f"{self.venue_info['website'].strip('/')}/api/open/GetItemsByMonth?month={month_year}&collectionId={collection_id}"
+            response = get_page(url)
+            # Length of 2 means no content
+            if len(response.content) == 2 or counter >= 12:
+                break
+            yield response.json()
+            date += timedelta(weeks=4)
+            counter += 1
 
     def scrape(self):
         """Override this."""
