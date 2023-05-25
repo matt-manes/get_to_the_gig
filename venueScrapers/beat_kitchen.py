@@ -42,7 +42,6 @@ class Scraper(GigScraper):
                     self.acts = event["title"]
                     url = f"https://www.beatkitchen.com/event-details/{event['id']}"
                     soup = get_soup(url)
-                    print(url)
                     self.genres = soup.find("div", class_="tw-genre").text
                     self.info = soup.find("div", class_="tw-age-restriction").text
                     price = soup.find("div", class_="tw-price")
