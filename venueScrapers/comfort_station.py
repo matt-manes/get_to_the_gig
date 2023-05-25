@@ -11,20 +11,6 @@ class Scraper(GigScraper):
     def __init__(self):
         super().__init__(Path(__file__))
 
-    def get_calendar(self, collection_id: str) -> Iterable[dict]:
-        date = datetime.now()
-        counter = 0
-        while True:
-            month_year = f"{date:%m-%Y}"
-            url = f"https://comfortstationlogansquare.org/api/open/GetItemsByMonth?month={month_year}&collectionId={collection_id}"
-            response = get_page(url)
-            print(counter)
-            if len(response.content) == 2 or counter >= 12:
-                break
-            yield response.json()
-            date += timedelta(weeks=4)
-            counter += 1
-
     def scrape(self):
         self.logger.info("Scrape started")
         try:
@@ -32,7 +18,7 @@ class Scraper(GigScraper):
             collection_id = re.findall(r'data-collection-id="[a-zA-Z0-9]+"', page.text)[
                 0
             ].split('"')[1]
-            for month in self.get_calendar(collection_id):
+            for month in self.get_squarespace_calendar(collection_id):
                 for event in month:
                     self.reset_event_details()
                     self.event_date = datetime.fromtimestamp(event["startDate"] / 1000)
