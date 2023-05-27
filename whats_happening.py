@@ -95,6 +95,7 @@ if __name__ == "__main__":
     columns_to_return = [
         "date",
         "venue",
+        "title",
         "acts",
         "price",
         "event_link",
