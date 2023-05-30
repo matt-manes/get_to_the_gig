@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from pathlib import Path
 
 from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
@@ -15,27 +15,14 @@ class Scraper(GigScraper):
             for i in range(1, 6):
                 events.extend(
                     get_page(
-                        f"https://sleeping-village.com/api/plot/v1/events?page={i}"
+                        f"https://sleeping-village.com/api/plot/v1/listings?page={i}"
                     ).json()
                 )
             for event in events:
                 self.reset_event_details()
-                # The API has started only returning weekday and time
-                # For now, have to make an extra request to the ticket page to get month and numerical day
-                # Way slower, but will have to do for now
-                soup = get_soup(event["ticket"]["link"])
-                date = soup.find(
-                    "div", class_="EventDetailsTitle__Date-v4l5yy-2 bdHHkj"
-                ).text
-                date = date.replace("Sept,", "Sep,")
-                try:
-                    self.event_date = datetime.datetime.strptime(
-                        date, "%a, %d %b, %H:%M %p"
-                    )
-                except Exception as e:
-                    self.event_date = datetime.datetime.strptime(
-                        date, "%a, %b %d, %H:%M %p"
-                    )
+                self.event_date = datetime.strptime(
+                    event["dateTime"], "<span>%a, %b %d %H:%M%p<span>"
+                )
                 self.event_date = self.event_date.replace(year=2023)
                 self.check_event_date_year()
                 self.title = event["title"]
