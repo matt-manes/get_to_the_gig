@@ -38,7 +38,11 @@ class Scraper(GigScraper):
     def scrape(self):
         self.logger.info("Scrape started")
         try:
-            events = self.get_event_links()
+            events = [
+                event
+                for event in self.get_event_links()
+                if "eventbrite.com" not in event
+            ]
             for event in events:
                 self.reset_event_details()
                 data = self.get_event_data(event)
