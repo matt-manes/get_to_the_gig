@@ -5,7 +5,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from pathlib import Path
+from pathier import Pathier
 
 from databased import DataBased
 from gitbetter import Git
@@ -14,7 +14,7 @@ from printbuddies import ProgBar
 
 from clear_old_events import clear_old_events
 
-root = Path(__file__).parent
+root = Pathier(__file__).parent
 
 
 def get_args() -> argparse.Namespace:

@@ -1,8 +1,8 @@
 import os
 import sys
-from pathlib import Path
+from pathier import Pathier
 
-root = Path(__file__).parent
+root = Pathier(__file__).parent
 
 print("Installing requirements... ")
 os.system(f"{sys.executable} -m pip install -r {root/'requirements.txt'}")

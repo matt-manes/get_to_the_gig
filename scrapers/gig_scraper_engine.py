@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import logging
-from pathlib import Path
 from typing import Iterable
 import requests
 
@@ -8,6 +7,10 @@ from bs4 import BeautifulSoup, element
 from databased import DataBased
 from noiftimer import Timer
 from whosyouragent import get_agent
+from pathier import Pathier
+
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
 
 
 def clean_string(string: str) -> str:
@@ -40,16 +43,16 @@ class GigScraper:
     """Base class for show scrapers.
 
     __init__ needs to be overridden by
-    calling Path(__file__) and passing it to
+    calling Pathier(__file__) and passing it to
     super().__init__().
 
     e.g.
 
     def __init__(self):
 
-        super().__init__(Path(__file__))"""
+        super().__init__(Pathier(__file__))"""
 
-    def __init__(self, scraper_path: Path):
+    def __init__(self, scraper_path: Pathier):
         self.scraper_path = scraper_path
         self.db = DataBased(self.scraper_path.parent.parent / "shows.db")
         self.init_logger()

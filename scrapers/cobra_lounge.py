@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-from pathlib import Path
+from pathier import Pathier
 import re
 import requests
 from whosyouragent import get_agent
@@ -11,7 +11,7 @@ from gig_scraper_engine import GigScraper, get_page
 # https://cobralounge.com/events/
 class Scraper(GigScraper):
     def __init__(self):
-        super().__init__(Path(__file__))
+        super().__init__(Pathier(__file__))
 
     def get_events(self) -> dict:
         page = get_page(self.venue_info["calendar_url"]).text

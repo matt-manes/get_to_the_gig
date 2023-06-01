@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import datetime
-from pathlib import Path
+from pathier import Pathier
 
 from gig_scraper_engine import GigScraper, get_page, get_soup
 
@@ -9,7 +9,7 @@ from gig_scraper_engine import GigScraper, get_page, get_soup
 # https://www.colesbarchicago.com/
 class Scraper(GigScraper):
     def __init__(self):
-        super().__init__(Path(__file__))
+        super().__init__(Pathier(__file__))
 
     def get_event_links(self) -> list[str]:
         soup = get_soup("https://www.colesbarchicago.com/")

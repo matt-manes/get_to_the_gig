@@ -64,8 +64,3 @@ class Event:
     @classmethod
     def new(cls) -> Self:
         return cls(date_added=datetime.now(), in_the_future=True)
-
-
-if __name__ == "__main__":
-    e = Event.new()
-    print(e)

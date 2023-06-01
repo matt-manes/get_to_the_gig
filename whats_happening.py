@@ -1,13 +1,13 @@
 import argparse
 from datetime import datetime, timedelta
-from pathlib import Path
+from pathier import Pathier
 
 from databased import DataBased, data_to_string
 
 from clear_old_events import clear_old_events
 from griddle import griddy
 
-root = Path(__file__).parent
+root = Pathier(__file__).parent
 
 
 def get_args() -> argparse.Namespace:

@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from pathlib import Path
+from pathier import Pathier
 from typing import Iterable
 from bs4 import Tag
 
@@ -9,7 +9,7 @@ from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
 
 class Scraper(GigScraper):
     def __init__(self):
-        super().__init__(Path(__file__))
+        super().__init__(Pathier(__file__))
 
     def get_event_list(self) -> Iterable[list[Tag]]:
         page = 1

@@ -1,5 +1,5 @@
 import datetime
-from pathlib import Path
+from pathier import Pathier
 import re
 import json
 
@@ -8,7 +8,7 @@ from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
 # https://www.beatkitchen.com/calendar/
 class Scraper(GigScraper):
     def __init__(self):
-        super().__init__(Path(__file__))
+        super().__init__(Pathier(__file__))
 
     def scrape(self):
         self.logger.info("Scrape started")

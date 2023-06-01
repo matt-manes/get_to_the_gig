@@ -1,9 +1,9 @@
 from datetime import datetime
-from pathlib import Path
+from pathier import Pathier
 
 from databased import DataBased
 
-root = Path(__file__).parent
+root = Pathier(__file__).parent
 
 db = DataBased(root / "shows.db")
 while True:
