@@ -29,14 +29,17 @@ class Venue:
     website: str
     calendar_url: str
     date_added: datetime
-    reference: str = ""  # Scraper files will be named with this + `.py`
+    # Scraper files will be named with this + `.py`
+    # The scraper class should also be named this, but camel case
+    ref_name: str = ""
 
     def __post_init__(self):
-        self.generate_reference()
+        if not self.ref_name:
+            self.generate_ref_name()
 
-    def generate_reference(self):
+    def generate_ref_name(self):
         """Generate reference name from instance's `name` member."""
-        self.reference = (
+        self.ref_name = (
             re.sub(rf"[{string.punctuation}]", "", self.name).replace(" ", "_").lower()
         )
 
