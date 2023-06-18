@@ -7,7 +7,7 @@ import models
 class GigBased(DataBased):
     def __init__(self, dbpath="getToTheGig.db"):
         super().__init__(dbpath)
-        self.create_tables
+        self.create_tables()
 
     def create_tables(self):
         self.create_venues_table()
@@ -150,3 +150,8 @@ class GigBased(DataBased):
         """
         rows = self.get_rows("events", *args, **kwargs)
         return [dacite.from_dict(models.Event, row) for row in rows]
+
+
+if __name__ == "__main__":
+    # This is just to create the db file and/or tables if they don't exist
+    GigBased()
