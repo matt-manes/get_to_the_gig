@@ -2,15 +2,19 @@ from datetime import datetime, timedelta
 import logging
 from typing import Iterable
 import requests
+from functools import cached_property
 
 from bs4 import BeautifulSoup, element
 from databased import DataBased
 from noiftimer import Timer
 from whosyouragent import get_agent
 from pathier import Pathier
+import nocamel
 
 root = Pathier(__file__).parent
 (root.parent).add_to_PATH()
+from gigbased import GigBased
+import models
 
 
 def clean_string(string: str) -> str:
@@ -40,6 +44,42 @@ def get_soup(url: str) -> BeautifulSoup:
 
 
 class GigScraper:
+    """Base class for scrapers."""
+
+    def __init__(self):
+        self.init_logger()
+
+    @cached_property
+    def venue(self) -> models.Venue:
+        """The venue model for this scraper."""
+        with GigBased() as db:
+            return db.get_venue(nocamel.convert_string(self.name).lower())
+
+    @cached_property
+    def name(self) -> str:
+        """This scraper's class name."""
+        return type(self).__name__
+
+    def init_logger(self):
+        log_dir = root / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        self.logger = logging.getLogger(self.venue.ref_name)
+        if not self.logger.hasHandlers():
+            handler = logging.FileHandler(
+                (log_dir / self.venue.ref_name).with_suffix(".log"), encoding="utf-8"
+            )
+            handler.setFormatter(
+                logging.Formatter(
+                    "{levelname}|-|{asctime}|-|{message}",
+                    style="{",
+                    datefmt="%m/%d/%Y %I:%M:%S %p",
+                )
+            )
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
+
+
+class GigScraperOld:
     """Base class for show scrapers.
 
     __init__ needs to be overridden by
