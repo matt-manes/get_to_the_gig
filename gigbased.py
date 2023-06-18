@@ -1,5 +1,5 @@
 import dacite
-from databased import DataBased
+from databased import DataBased, _disconnect
 
 import models
 
@@ -63,7 +63,7 @@ class GigBased(DataBased):
                 venue.address.zip_code,
                 venue.website,
                 venue.calendar_url,
-                venue.reference,
+                venue.ref_name,
                 venue.date_added,
             ],
             [
@@ -74,7 +74,7 @@ class GigBased(DataBased):
                 "zip_code",
                 "website",
                 "calendar_url",
-                "reference",
+                "ref_name",
                 "date_added",
             ],
         )
@@ -150,6 +150,14 @@ class GigBased(DataBased):
         """
         rows = self.get_rows("events", *args, **kwargs)
         return [dacite.from_dict(models.Event, row) for row in rows]
+
+    @_disconnect
+    def get_venue(self, ref_name: str) -> models.Venue:
+        """Return a `Venue` model given a venue's `ref_name`.
+        Database connection will be closed after calling this function."""
+        return dacite.from_dict(
+            models.Venue, self.get_rows("venues", {"ref_name": ref_name})[0]
+        )
 
 
 if __name__ == "__main__":
