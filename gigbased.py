@@ -88,7 +88,7 @@ class GigBased(DataBased):
         return self.add_row(
             "events",
             (
-                event.venue,
+                event.venue.name if type(event.venue) == models.Venue else event.venue,
                 event.title,
                 event.date,
                 event.acts,
