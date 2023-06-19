@@ -48,6 +48,7 @@ class GigScraper:
 
     def __init__(self):
         self.init_logger()
+        self.timer = Timer().start()
 
     @cached_property
     def venue(self) -> models.Venue:
@@ -77,6 +78,20 @@ class GigScraper:
             )
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
+
+    @staticmethod
+    def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
+        """Request `url` and return the `requests.Response` object."""
+        return requests.get(url, headers=get_agent(True) | headers)
+
+    def get_calendar(self) -> requests.Response:
+        """Make a request to this venue's calendar url."""
+        return self.get_page(self.venue.calendar_url)
+
+    @staticmethod
+    def as_soup(self, response: requests.Response) -> BeautifulSoup:
+        """Return `response.text` as a `BeautifulSoup` object."""
+        return BeautifulSoup(response.text, "html.parser")
 
 
 class GigScraperOld:
