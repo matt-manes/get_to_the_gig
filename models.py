@@ -1,6 +1,6 @@
 import re
 import string
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, fields
 from datetime import datetime
 from typing import Optional
 
@@ -66,6 +66,11 @@ class Venue:
         >>> "IL"
         instead of
         >>> d["address"]["state"]"""
+        addy = asdict(self.address)
+        venue = asdict(self)
+        venue.pop("address")
+        venue |= addy
+        return venue
 
 
 @dataclass
@@ -87,3 +92,11 @@ class Event:
     @classmethod
     def new(cls) -> Self:
         return cls(date_added=datetime.now(), in_the_future=True)
+
+    def clean(self):
+        """Strip ` \n\t\r` characters and remove `"` characters from `str` members."""
+        for field in fields(self):
+            name = field.name
+            val = getattr(self, name)
+            if type(val) is str:
+                setattr(self, name, val.strip(" \n\t\r").replace('"', ""))
