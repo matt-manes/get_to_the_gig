@@ -153,7 +153,6 @@ class GigBased(DataBased):
         rows = self.get_rows("events", *args, **kwargs)
         return [dacite.from_dict(models.Event, row) for row in rows]
 
-    @_disconnect
     def get_venue(self, ref_name: str) -> models.Venue:
         """Return a `Venue` model given a venue's `ref_name`.
         Database connection will be closed after calling this function."""
@@ -161,7 +160,6 @@ class GigBased(DataBased):
             models.Venue, self.get_rows("venues", {"ref_name": ref_name})[0]
         )
 
-    @_disconnect
     def venue_in_database(self, venue: models.Venue) -> bool:
         """Returns True if `venue` is already in the database.
         Database connection will be closed after calling this function."""
