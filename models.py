@@ -70,19 +70,19 @@ class Venue:
 
 @dataclass
 class Event:
-    venue: Optional[str | Venue] = None
-    title: Optional[str] = None
-    date: Optional[datetime] = None
-    acts: Optional[str] = None
-    price: Optional[str] = None
-    event_url: Optional[str] = None
-    ticket_url: Optional[str] = None
-    act_urls: Optional[str] = None
-    info: Optional[str] = None
-    age_restriction: Optional[str] = None
-    date_added: Optional[datetime] = None
-    genres: Optional[str] = None
-    in_the_future: Optional[bool] = None
+    venue: Optional[str | Venue] = ""
+    title: Optional[str] = ""
+    date: Optional[datetime] = datetime.now()
+    acts: Optional[str] = ""
+    price: Optional[str] = ""
+    event_url: Optional[str] = ""
+    ticket_url: Optional[str] = ""
+    act_urls: Optional[str] = ""
+    info: Optional[str] = ""
+    age_restriction: Optional[str] = ""
+    date_added: Optional[datetime] = datetime.now()
+    genres: Optional[str] = ""
+    in_the_future: Optional[bool] = True
 
     @classmethod
     def new(cls) -> Self:
