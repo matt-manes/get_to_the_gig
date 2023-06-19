@@ -26,7 +26,7 @@ class GigBased(DataBased):
                 "zip_code text",
                 "website text",
                 "calendar_url text",
-                "reference text unique",
+                "ref_name text",
                 "date_added timestamp",
             ],
         )
