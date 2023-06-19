@@ -1,20 +1,20 @@
-from datetime import datetime, timedelta
 import logging
-from typing import Iterable
-import requests
+from datetime import datetime, timedelta
 from functools import cached_property
+from typing import Iterable
 
+import nocamel
+import requests
 from bs4 import BeautifulSoup, element
 from databased import DataBased
 from noiftimer import Timer
-from whosyouragent import get_agent
 from pathier import Pathier
-import nocamel
+from whosyouragent import get_agent
 
 root = Pathier(__file__).parent
 (root.parent).add_to_PATH()
-from gigbased import GigBased
 import models
+from gigbased import GigBased
 
 
 def clean_string(string: str) -> str:
