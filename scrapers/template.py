@@ -9,7 +9,7 @@ root = Pathier(__file__).parent
 import models
 
 # not_ready
-# calendar_url:
+# calendar url:
 class Venue(GigScraper):
     def scrape(self):
         """Scrape calendar."""
