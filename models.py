@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from typing_extensions import Self
+from typing_extensions import Self, Any
 
 
 @dataclass
@@ -55,6 +55,17 @@ class Venue:
                 str(self.address),
             ]
         )
+
+    @property
+    def flattened_dict(self) -> dict[str, Any]:
+        """Returns same thing as `dataclasses.asdict()`, except `self.address` will be extracted to the top layer.
+
+        i.e.
+        >>> d = venue.flattened_dict
+        >>> d["state"]
+        >>> "IL"
+        instead of
+        >>> d["address"]["state"]"""
 
 
 @dataclass
