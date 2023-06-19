@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 import dacite
 from databased import DataBased, _disconnect
 
@@ -158,6 +160,14 @@ class GigBased(DataBased):
         return dacite.from_dict(
             models.Venue, self.get_rows("venues", {"ref_name": ref_name})[0]
         )
+
+    @_disconnect
+    def venue_in_database(self, venue: models.Venue) -> bool:
+        """Returns True if `venue` is already in the database.
+        Database connection will be closed after calling this function."""
+        venue_dict = venue.flattened_dict
+        venue_dict.pop("date_added")
+        return self.count("venues", venue_dict) > 0
 
 
 if __name__ == "__main__":
