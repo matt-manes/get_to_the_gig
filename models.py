@@ -47,6 +47,15 @@ class Venue:
     def new(cls) -> Self:
         return cls("", Address.new(), "", "", datetime.now())
 
+    def __str__(self) -> str:
+        return "\n".join(
+            [
+                self.name,
+                self.calendar_url,
+                str(self.address),
+            ]
+        )
+
 
 @dataclass
 class Event:
