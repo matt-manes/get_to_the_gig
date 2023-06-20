@@ -80,6 +80,14 @@ class GigScraper:
             event.date = event.date.replace(year=event.date.year + 1)
         return event
 
+    def add_event(self, event: models.Event):
+        """Add `event` to database or update the entry if it appears to already be in the database."""
+        event = self.check_event_year(event)
+        event.clean()
+        # ADD detections for event already existing
+        with GigBased() as db:
+            db.add_event(event)
+
 
 class GigScraperOld:
     """Base class for show scrapers.
