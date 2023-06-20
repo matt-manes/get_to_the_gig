@@ -1,10 +1,12 @@
+from datetime import datetime
+
 from argshell import ArgShellParser, Namespace, with_parser
+from databased import DataBased, DBShell, dbparsers
 from pathier import Pathier
 
-from databased import DataBased, DBShell, dbparsers
-from gigbased import GigBased
+import add_venue
 import models
-from datetime import datetime
+from gigbased import GigBased
 
 root = Pathier(__file__).parent
 
@@ -51,6 +53,7 @@ class Gigshell(DBShell):
     @with_parser(add_venue_parser, [add_venue_post])
     def do_add_venue(self, args: Namespace):
         """Add venue to database."""
+        print()
         venue = models.Venue(
             args.name,
             models.Address(args.street, args.city, args.state, args.zipcode),
@@ -58,24 +61,20 @@ class Gigshell(DBShell):
             args.calendar_url,
             datetime.now(),
         )
-        if self.db.venue_in_database(venue):
-            print("ERROR: This venue is already in the database.")
+        try:
+            success_status = add_venue.add_venue(venue)
+        except Exception as e:
+            print(e)
         else:
-            successful = self.db.add_venue(venue)
-            self.db.close()
-            if not successful:
+            if not success_status:
                 print(f"ERROR adding venue.\nSee {self.dbpath.stem}.log for details.")
             else:
-                print(f"{args.name} successfully added to the database.")
-                template = (root / "scrapers" / "template.py").read_text()
-                template = template.replace(
-                    "# calendar url:", f"# calendar url: {venue.calendar_url}"
+                add_venue.create_from_template(venue)
+                print(f'"{venue.name}" successfully added to database.')
+                print(
+                    f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
                 )
-                template = template.replace(
-                    "Venue",
-                    "".join(word.capitalize() for word in venue.ref_name.split("_")),
-                )
-                (root / "scrapers" / f"{venue.ref_name}.py").write_text(template)
+        print()
 
 
 if __name__ == "__main__":

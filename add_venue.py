@@ -1,47 +1,36 @@
 from datetime import datetime
 from pathier import Pathier
 
-from databased import DataBased
+from gigbased import GigBased
+import models
+import exceptions
 
 root = Pathier(__file__).parent
 
-db = DataBased(root / "shows.db")
-while True:
-    try:
-        venues = [venue["name"] for venue in db.get_rows("venues")]
-        db.close()
-        name = input("Venue name: ")
-        if name in venues:
-            print(f"{name} already in venues")
-        else:
-            street = input("Street: ")
-            city = input("City: ")
-            state = input("State: ")
-            zip_code = input("Zip: ")
-            website = input("Website: ")
-            calendar_url = input("Calendar url: ")
-            date_added = datetime.now()
-            reference_name = name.replace(" ", "").replace("'", "")
-            reference_name = reference_name[0].lower() + reference_name[1:]
-            db.add_row(
-                "venues",
-                (
-                    name,
-                    street,
-                    city,
-                    state,
-                    zip_code,
-                    website,
-                    calendar_url,
-                    date_added,
-                    reference_name,
-                ),
-            )
-            db.close()
-            template = (root / "venueScrapers" / "template.py").read_text()
-            template = template.replace("$calendar_url", calendar_url)
-            (root / "venueScrapers" / f"{reference_name}.py").write_text(template)
-    except KeyboardInterrupt:
-        break
-    except Exception as e:
-        print(e)
+
+def create_from_template(venue: models.Venue):
+    """Create a scraper file in scrapers folder for `venue` from `template.py`."""
+    template_path = root / "scrapers" / "template.py"
+    template = template_path.read_text()
+    class_name = "".join(word.capitalize() for word in venue.ref_name.split("_"))
+    for text, sub in [
+        ("# calendar url:", f"# calendar url: {venue.calendar_url}"),
+        ("Venue", class_name),
+    ]:
+        template = template.replace(text, sub)
+    (template_path.with_stem(venue.ref_name)).write_text(template)
+
+
+def add_venue(venue: models.Venue) -> bool:
+    """Add `venue` to the database and generate scraper template.
+
+    Raises an `exceptions.VenueExistsError` exception if `venue` is already in the database.
+
+    Returns `True` if database transaction was successful."""
+
+    venue.website = venue.website.strip("/")
+    venue.calendar_url = venue.calendar_url.strip("/")
+    with GigBased() as db:
+        if db.venue_in_database(venue):
+            raise exceptions.VenueExistsError(venue.name)
+        return db.add_venue(venue)
