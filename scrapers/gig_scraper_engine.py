@@ -5,14 +5,13 @@ from typing import Iterable
 
 import nocamel
 import requests
-from bs4 import BeautifulSoup, element
-from databased import DataBased
+from bs4 import BeautifulSoup
 from noiftimer import Timer
 from pathier import Pathier
 from whosyouragent import get_agent
 
 root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
+root.parent.add_to_PATH()
 import models
 from gigbased import GigBased
 
@@ -25,42 +24,23 @@ class GigScraper:
         self.timer = Timer()
 
     @cached_property
+    def name(self) -> str:
+        """This scraper's class name."""
+        return type(self).__name__
+
+    @cached_property
     def venue(self) -> models.Venue:
         """The venue model for this scraper."""
         with GigBased() as db:
             return db.get_venue(nocamel.convert_string(self.name).lower())
 
-    @cached_property
-    def name(self) -> str:
-        """This scraper's class name."""
-        return type(self).__name__
-
-    def init_logger(self):
-        log_dir = root / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        self.logger = logging.getLogger(self.venue.ref_name)
-        if not self.logger.hasHandlers():
-            handler = logging.FileHandler(
-                (log_dir / self.venue.ref_name).with_suffix(".log"), encoding="utf-8"
-            )
-            handler.setFormatter(
-                logging.Formatter(
-                    "{levelname}|-|{asctime}|-|{message}",
-                    style="{",
-                    datefmt="%m/%d/%Y %I:%M:%S %p",
-                )
-            )
-            self.logger.addHandler(handler)
-            self.logger.setLevel(logging.INFO)
-
-    @staticmethod
-    def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
-        """Request `url` and return the `requests.Response` object."""
-        return requests.get(url, headers=get_agent(True) | headers)
-
-    def get_calendar(self) -> requests.Response:
-        """Make a request to this venue's calendar url."""
-        return self.get_page(self.venue.calendar_url)
+    def add_event(self, event: models.Event):
+        """Add `event` to database or update the entry if it appears to already be in the database."""
+        event = self.check_event_year(event)
+        event.clean()
+        # ADD detections for event already existing
+        with GigBased() as db:
+            db.add_event(event)
 
     @staticmethod
     def as_soup(self, response: requests.Response) -> BeautifulSoup:
@@ -80,24 +60,6 @@ class GigScraper:
             event.date = event.date.replace(year=event.date.year + 1)
         return event
 
-    def add_event(self, event: models.Event):
-        """Add `event` to database or update the entry if it appears to already be in the database."""
-        event = self.check_event_year(event)
-        event.clean()
-        # ADD detections for event already existing
-        with GigBased() as db:
-            db.add_event(event)
-
-    def prescrape_chores(self):
-        """Chores to do before scraping the venue."""
-        self.timer.start()
-        self.logger.info("Scrape started.")
-
-    def postscrape_chores(self):
-        """Chores to do after scraping the venue."""
-        self.timer.stop()
-        self.logger.info(f"Scrape completed in {self.timer.elapsed_str}")
-
     def chores(scrape):
         """Chores to do before and after running `self.scrape()`."""
 
@@ -109,10 +71,14 @@ class GigScraper:
 
         return inner
 
-    @chores
-    def scrape(self):
-        """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
-        raise NotImplementedError
+    def get_calendar(self) -> requests.Response:
+        """Make a request to this venue's calendar url."""
+        return self.get_page(self.venue.calendar_url)
+
+    @staticmethod
+    def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
+        """Request `url` and return the `requests.Response` object."""
+        return requests.get(url, headers=get_agent(True) | headers)
 
     def get_squarespace_calendar(self, collection_id: str) -> Iterable[dict]:
         """Generator that yields a dictionary of event details for venues
@@ -131,3 +97,36 @@ class GigScraper:
             yield response.json()
             date += timedelta(weeks=4)
             counter += 1
+
+    def init_logger(self):
+        log_dir = root / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        self.logger = logging.getLogger(self.venue.ref_name)
+        if not self.logger.hasHandlers():
+            handler = logging.FileHandler(
+                (log_dir / self.venue.ref_name).with_suffix(".log"), encoding="utf-8"
+            )
+            handler.setFormatter(
+                logging.Formatter(
+                    "{levelname}|-|{asctime}|-|{message}",
+                    style="{",
+                    datefmt="%m/%d/%Y %I:%M:%S %p",
+                )
+            )
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
+
+    def postscrape_chores(self):
+        """Chores to do after scraping the venue."""
+        self.timer.stop()
+        self.logger.info(f"Scrape completed in {self.timer.elapsed_str}")
+
+    def prescrape_chores(self):
+        """Chores to do before scraping the venue."""
+        self.timer.start()
+        self.logger.info("Scrape started.")
+
+    @chores
+    def scrape(self):
+        """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
+        raise NotImplementedError
