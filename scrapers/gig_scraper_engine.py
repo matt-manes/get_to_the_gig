@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from functools import cached_property
+from functools import cached_property, wraps
 from typing import Iterable
 
 import nocamel
@@ -22,7 +22,7 @@ class GigScraper:
 
     def __init__(self):
         self.init_logger()
-        self.timer = Timer().start()
+        self.timer = Timer()
 
     @cached_property
     def venue(self) -> models.Venue:
@@ -87,6 +87,32 @@ class GigScraper:
         # ADD detections for event already existing
         with GigBased() as db:
             db.add_event(event)
+
+    def prescrape_chores(self):
+        """Chores to do before scraping the venue."""
+        self.timer.start()
+        self.logger.info("Scrape started.")
+
+    def postscrape_chores(self):
+        """Chores to do after scraping the venue."""
+        self.timer.stop()
+        self.logger.info(f"Scrape completed in {self.timer.elapsed_str}")
+
+    def chores(scrape):
+        """Chores to do before and after running `self.scrape()`."""
+
+        @wraps
+        def inner(self):
+            self.prescrape_chores()
+            scrape(self)
+            self.postscrape_chores()
+
+        return inner
+
+    @chores
+    def scrape(self):
+        """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
+        raise NotImplementedError
 
 
 class GigScraperOld:
