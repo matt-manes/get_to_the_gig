@@ -1,0 +1,4 @@
+dbpath = "getToTheGig.db"
+backup_before_scrape = true
+drop_future_events = true
+update_in_the_future = true
