@@ -67,6 +67,19 @@ class GigScraper:
         """Return `response.text` as a `BeautifulSoup` object."""
         return BeautifulSoup(response.text, "html.parser")
 
+    def check_event_year(self, event: models.Event) -> models.Event:
+        """If the event date looks to be more than 30 days in the past, increase the year by 1.
+
+        Some venues don't list the year, so if the event looks to be in the past, it's probably next year.
+
+        e.g. it's currently December and the event is in January,
+        but no year listed may result in a datetime for January of this year instead of next year.
+
+        Use of this function assumes the venue removes previous events from their website within 30 days after the event."""
+        if (datetime.now() - event.date).days > 30:
+            event.date = event.date.replace(year=event.date.year + 1)
+        return event
+
 
 class GigScraperOld:
     """Base class for show scrapers.
