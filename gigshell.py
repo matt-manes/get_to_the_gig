@@ -35,30 +35,20 @@ def add_venue_parser() -> ArgShellParser:
     return parser
 
 
-def add_venue_post(args: Namespace) -> Namespace:
-    """Post parser for `add_venue_parser()`."""
-    if not args.calendar_url:
-        args.calendar_url = args.website
-    args.website = args.website.strip("/")
-    args.calendar_url = args.calendar_url.strip("/")
-    return args
-
-
 class Gigshell(DBShell):
     intro = "Starting gigshell (enter help or ? for command info)..."
     prompt = "gigshell>"
     dbpath: Pathier = Pathier("getToTheGig.db")
     db = GigBased(dbpath)
 
-    @with_parser(add_venue_parser, [add_venue_post])
+    @with_parser(add_venue_parser)
     def do_add_venue(self, args: Namespace):
         """Add venue to database."""
-        print()
         venue = models.Venue(
             args.name,
             models.Address(args.street, args.city, args.state, args.zipcode),
             args.website,
-            args.calendar_url,
+            args.calendar_url or args.website,
             datetime.now(),
         )
         try:
@@ -74,7 +64,6 @@ class Gigshell(DBShell):
                 print(
                     f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
                 )
-        print()
 
 
 if __name__ == "__main__":
