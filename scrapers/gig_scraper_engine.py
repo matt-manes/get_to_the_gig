@@ -17,32 +17,6 @@ import models
 from gigbased import GigBased
 
 
-def clean_string(string: str) -> str:
-    return string.strip(" \n\t\r").replace('"', "")
-
-
-def get_text(element: element.Tag | element.NavigableString, clean: bool = True) -> str:
-    """Returns the text from a BeautifulSoup element, if there is any.
-
-    Using this keeps try/except blocks from cluttering up scraper code.
-
-    If clean is True, then ' \n\t\r' will be stripped from the string.
-
-    Returns an empty string if element.text is None."""
-    try:
-        return clean_string(element.text) if clean else element.text
-    except:
-        return ""
-
-
-def get_page(url: str) -> requests.Response:
-    return requests.get(url, headers={"User-Agent": get_agent()})
-
-
-def get_soup(url: str) -> BeautifulSoup:
-    return BeautifulSoup(get_page(url).text, "html.parser")
-
-
 class GigScraper:
     """Base class for scrapers."""
 
