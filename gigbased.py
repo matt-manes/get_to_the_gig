@@ -181,6 +181,10 @@ class GigBased(DataBased):
         #### :Intention: Avoid adding duplicate events or needing to determine
         if the event to be added already exists but website information for it has changed.
         Ideally a backup of the database should be made first and this should be called after calling `self.update_in_the_future`."""
+        if venue:
+            self.delete("events", {"venue": venue.name, "in_the_future": 1})
+        else:
+            self.delete("events", {"in_the_future": 1})
 
 
 if __name__ == "__main__":
