@@ -168,11 +168,19 @@ class GigBased(DataBased):
         venue_dict.pop("date_added")
         return self.count("venues", venue_dict) > 0
 
-    def mark_past_events(self):
+    def update_in_the_future(self):
         """Set `in_the_future` column in the events table to `0` for events that have already happened."""
         self.query(
             f"UPDATE events SET in_the_future = 0 WHERE date < '{datetime.now()}';"
         )
+
+    def drop_future_events(self, venue: models.Venue | None = None):
+        """Delete events that haven't happened yet for `venue`.
+        If `venue` is not given, the operation will occur on all venues.
+
+        #### :Intention: Avoid adding duplicate events or needing to determine
+        if the event to be added already exists but website information for it has changed.
+        Ideally a backup of the database should be made first and this should be called after calling `self.update_in_the_future`."""
 
 
 if __name__ == "__main__":
