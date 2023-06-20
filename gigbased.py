@@ -1,7 +1,8 @@
 from dataclasses import asdict
+from datetime import datetime
 
 import dacite
-from databased import DataBased, _disconnect
+from databased import DataBased
 
 import models
 
@@ -166,6 +167,12 @@ class GigBased(DataBased):
         venue_dict = venue.flattened_dict
         venue_dict.pop("date_added")
         return self.count("venues", venue_dict) > 0
+
+    def mark_past_events(self):
+        """Set `in_the_future` column in the events table to `0` for events that have already happened."""
+        self.query(
+            f"UPDATE events SET in_the_future = 0 WHERE date < '{datetime.now()}';"
+        )
 
 
 if __name__ == "__main__":
