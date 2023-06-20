@@ -11,9 +11,9 @@ import models
 # not_ready (This file will be ignored by scrape_venues.py until this comment is removed.)
 # calendar url:
 class Venue(GigScraper):
+    @GigScraper.chores
     def scrape(self):
         """Scrape calendar."""
-        self.logger.info("Scrape started.")
         response = self.get_calendar()
         soup = self.as_soup(response)
 
