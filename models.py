@@ -77,7 +77,7 @@ class Venue:
 class Event:
     venue: Optional[str | Venue] = ""
     title: Optional[str] = ""
-    date: Optional[datetime] = datetime.now()
+    date: Optional[datetime] = None
     acts: Optional[str] = ""
     price: Optional[str] = ""
     event_url: Optional[str] = ""
