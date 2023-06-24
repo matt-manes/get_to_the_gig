@@ -25,10 +25,10 @@ class GigScraper:
         self.timer = Timer()
         self.config = Config.load(root.parent / "config.toml")
 
-    @cached_property
+    @property
     def name(self) -> str:
-        """This scraper's class name."""
-        return type(self).__name__
+        """This scraper's name. Equivalent to it's `ref_name` in the database."""
+        return Pathier(__file__).stem
 
     @cached_property
     def venue(self) -> models.Venue:
