@@ -1,6 +1,6 @@
 import datetime
 
-from gig_scraper_engine import GigScraper
+from gig_scraper import GigScraper
 from pathier import Pathier
 
 root = Pathier(__file__).parent
