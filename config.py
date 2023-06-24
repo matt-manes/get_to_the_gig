@@ -1,5 +1,6 @@
+from dataclasses import asdict, dataclass
+
 import dacite
-from dataclasses import dataclass, asdict
 from pathier import Pathier, Pathish
 from typing_extensions import Self
 
@@ -12,12 +13,12 @@ class Config:
     update_in_the_future: bool
 
     @classmethod
-    def load(cls, path: Pathish = "config.toml") -> Self:
+    def load(cls, path: Pathish = Pathier(__file__).parent / "config.toml") -> Self:
         """Return a `datamodel` object populated from `path`."""
         data = Pathier(path).loads()
         return dacite.from_dict(cls, data)
 
-    def dump(self, path: Pathish = "config.toml"):
+    def dump(self, path: Pathish = Pathier(__file__).parent / "config.toml"):
         """Write the contents of this `datamodel` object to `path`."""
         data = asdict(self)
         Pathier(path).dumps(data)

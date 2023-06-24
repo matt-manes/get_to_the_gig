@@ -13,6 +13,7 @@ from whosyouragent import get_agent
 root = Pathier(__file__).parent
 root.parent.add_to_PATH()
 import models
+from config import Config
 from gigbased import GigBased
 
 
@@ -22,7 +23,7 @@ class GigScraper:
     def __init__(self):
         self.init_logger()
         self.timer = Timer()
-        self.config = (root.parent / "config.toml").loads()
+        self.config = Config.load(root.parent / "config.toml")
 
     @cached_property
     def name(self) -> str:
@@ -124,12 +125,12 @@ class GigScraper:
 
     def prescrape_chores(self):
         """Chores to do before scraping the venue."""
-        if self.config["backup_before_scrape"]:
-            Pathier(self.config["dbpath"]).backup()
+        if self.config.backup_before_scrape:
+            Pathier(self.config.dbpath).backup()
         with GigBased() as db:
-            if self.config["update_in_the_future"]:
+            if self.config.update_in_the_future:
                 db.update_in_the_future()
-            if self.config["drop_future_events"]:
+            if self.config.drop_future_events:
                 db.drop_future_events(self.venue)
         self.timer.start()
         self.logger.info("Scrape started.")
