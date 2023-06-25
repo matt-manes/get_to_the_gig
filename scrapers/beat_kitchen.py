@@ -46,27 +46,33 @@ class Venue(GigScraper):
                     "Failed to parse script tag in 'self.parse_events_data()'"
                 )
             for listing in events:
-                event = models.Event.new()
-                # self.logger.info(str(event))
-                event.date = datetime.strptime(listing["start"], "%Y-%m-%d %H:%M:%S")
-                if datetime.now() < event.date:
-                    event.title = listing["title"]
-                    event.acts = listing["title"]
-                    event.url = (
-                        f"https://www.beatkitchen.com/event-details/{listing['id']}"
+                try:
+                    event = models.Event.new()
+                    event.date = datetime.strptime(
+                        listing["start"], "%Y-%m-%d %H:%M:%S"
                     )
-                    soup = self.as_soup(self.get_page(event.url))
-                    event.genres = soup.find("div", class_="tw-genre").text
-                    event.age_restriction = soup.find(
-                        "div", class_="tw-age-restriction"
-                    ).text
-                    price_tag = soup.find("div", class_="tw-price")
-                    event.price = price_tag.text if price_tag else "Free"
-                    event.ticket_url = (
-                        soup.find("div", class_="tw-buy-box").find("a").get("href")
-                    )
-                    event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
-                    self.add_event(event)
+                    if datetime.now() < event.date:
+                        event.title = listing["title"]
+                        event.acts = listing["title"]
+                        event.url = (
+                            f"https://www.beatkitchen.com/event-details/{listing['id']}"
+                        )
+                        soup = self.as_soup(self.get_page(event.url))
+                        event.genres = soup.find("div", class_="tw-genre").text
+                        event.age_restriction = soup.find(
+                            "div", class_="tw-age-restriction"
+                        ).text
+                        price_tag = soup.find("div", class_="tw-price")
+                        event.price = price_tag.text if price_tag else "Free"
+                        event.ticket_url = (
+                            soup.find("div", class_="tw-buy-box").find("a").get("href")
+                        )
+                        event.ticket_url = event.ticket_url[
+                            : event.ticket_url.find("?")
+                        ]
+                        self.add_event(event)
+                except Exception as e:
+                    self.event_fail(event)
         except Exception as e:
             self.logger.exception("Unexpected failure.")
 
