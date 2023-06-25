@@ -154,3 +154,8 @@ class GigScraper:
     def scrape(self):
         """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
         raise NotImplementedError
+
+    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event:
+        """Override this to parse a singular event from either a dictionary
+        or BeautifulSoup object depending on the venue website."""
+        raise NotImplementedError
