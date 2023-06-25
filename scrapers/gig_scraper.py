@@ -52,7 +52,9 @@ class GigScraper:
         """Call when an exception occurs while scraping a given event.
         Will log the error with a dump of `event` (scraper code and non present values can help determine culprit)
         and increment `self.fail_count`."""
-        self.logger.exception(f"Error scraping event:\n{event.dump()}")
+        marker = "'/////////////// EVENT DUMP ///////////////'"
+        event.clean()
+        self.logger.exception(f"\n{marker}\n\n{event.dump()}\n\n{marker}")
         self.fail_count += 1
 
     @staticmethod
