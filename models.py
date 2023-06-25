@@ -95,7 +95,7 @@ class Event:
         """Dump field names and values. Primarily for debugging and crash logs."""
         members = sorted(fields(self), key=lambda field: field.name)
         return "\n".join(
-            f"{member.name}: {getattr(self, member.name)}" for member in members
+            f"'{member.name}': '{getattr(self, member.name)}'" for member in members
         )
 
     @classmethod
