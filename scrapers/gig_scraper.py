@@ -143,6 +143,10 @@ class GigScraper:
         if self.config.backup_before_scrape:
             Pathier(self.config.dbpath).backup()
         with GigBased() as db:
+            # May be temporary until a better way of detecting whether an event is updated or a duplicate.
+            # Dropping all of them first is easier, but renders the "date_added" field meaningless.
+            if self.config.drop_all_events:
+                db.delete("events", {"venue": self.venue.name})
             if self.config.update_in_the_future:
                 db.update_in_the_future()
             if self.config.drop_future_events:
