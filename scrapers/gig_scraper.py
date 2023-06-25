@@ -24,6 +24,8 @@ class GigScraper:
         self.init_logger()
         self.timer = Timer()
         self.config = Config.load(root.parent / "config.toml")
+        self.add_count = 0
+        self.fail_count = 0
 
     @property
     def name(self) -> str:
@@ -44,6 +46,14 @@ class GigScraper:
         # ADD detections for event already existing
         with GigBased() as db:
             db.add_event(event)
+        self.add_count += 1
+
+    def event_fail(self, event: models.Event):
+        """Call when an exception occurs while scraping a given event.
+        Will log the error with a dump of `event` (scraper code and non present values can help determine culprit)
+        and increment `self.fail_count`."""
+        self.logger.exception(f"Error scraping event:\n{event.dump()}")
+        self.fail_count += 1
 
     @staticmethod
     def as_soup(response: requests.Response) -> BeautifulSoup:
@@ -122,7 +132,9 @@ class GigScraper:
     def postscrape_chores(self):
         """Chores to do after scraping the venue."""
         self.timer.stop()
-        self.logger.info(f"Scrape completed in {self.timer.elapsed_str}")
+        self.logger.info(
+            f"Scrape completed in {self.timer.elapsed_str} with {self.add_count} successes and {self.fail_count} failures."
+        )
 
     def prescrape_chores(self):
         """Chores to do before scraping the venue."""
