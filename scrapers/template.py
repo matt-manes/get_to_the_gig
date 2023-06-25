@@ -18,8 +18,12 @@ class Venue(GigScraper):
     @GigScraper.chores
     def scrape(self):
         """Scrape calendar."""
-        response = self.get_calendar()
-        soup = self.as_soup(response)
+        try:
+            response = self.get_calendar()
+            soup = self.as_soup(response)
+
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
