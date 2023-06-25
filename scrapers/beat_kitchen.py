@@ -33,6 +33,27 @@ class Venue(GigScraper):
         events = json.loads(events)
         return events
 
+    def parse_event(self, listing: dict) -> models.Event:
+        """Parse an individual event."""
+        event = models.Event.new()
+        event.date = datetime.strptime(listing["start"], "%Y-%m-%d %H:%M:%S")
+        if datetime.now() < event.date:
+            event.title = listing["title"]
+            event.acts = listing["title"]
+            event.url = f"https://www.beatkitchen.com/event-details/{listing['id']}"
+            soup = self.as_soup(self.get_page(event.url))
+            event.genres = soup.find("div", class_="tw-genre").text
+            event.age_restriction = soup.find("div", class_="tw-age-restriction").text
+            price_tag = soup.find("div", class_="tw-price")
+            event.price = price_tag.text if price_tag else "Free"
+            event.ticket_url = (
+                soup.find("div", class_="tw-buy-box").find("a").get("href")
+            )
+            event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
+        else:
+            event.in_the_future = False
+        return event
+
     @GigScraper.chores
     def scrape(self):
         """Scrape calendar."""
@@ -47,29 +68,8 @@ class Venue(GigScraper):
                 )
             for listing in events:
                 try:
-                    event = models.Event.new()
-                    event.date = datetime.strptime(
-                        listing["start"], "%Y-%m-%d %H:%M:%S"
-                    )
-                    if datetime.now() < event.date:
-                        event.title = listing["title"]
-                        event.acts = listing["title"]
-                        event.url = (
-                            f"https://www.beatkitchen.com/event-details/{listing['id']}"
-                        )
-                        soup = self.as_soup(self.get_page(event.url))
-                        event.genres = soup.find("div", class_="tw-genre").text
-                        event.age_restriction = soup.find(
-                            "div", class_="tw-age-restriction"
-                        ).text
-                        price_tag = soup.find("div", class_="tw-price")
-                        event.price = price_tag.text if price_tag else "Free"
-                        event.ticket_url = (
-                            soup.find("div", class_="tw-buy-box").find("a").get("href")
-                        )
-                        event.ticket_url = event.ticket_url[
-                            : event.ticket_url.find("?")
-                        ]
+                    event = self.parse_event(listing)
+                    if event.in_the_future:
                         self.add_event(event)
                 except Exception as e:
                     self.event_fail(event)
