@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from gig_scraper import GigScraper
 from pathier import Pathier
