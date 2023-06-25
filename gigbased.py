@@ -1,4 +1,5 @@
 from datetime import datetime
+from dataclasses import dataclass, asdict
 
 import dacite
 from databased import DataBased
@@ -151,9 +152,9 @@ class GigBased(DataBased):
     def get_venue(self, ref_name: str) -> models.Venue:
         """Return a `Venue` model given a venue's `ref_name`.
         Database connection will be closed after calling this function."""
-        return dacite.from_dict(
-            models.Venue, self.get_rows("venues", {"ref_name": ref_name})[0]
-        )
+        row = self.get_rows("venues", {"ref_name": ref_name})[0]
+        row["address"] = asdict(dacite.from_dict(models.Address, row))
+        return dacite.from_dict(models.Venue, row)
 
     def get_venues(self, *args, **kwargs) -> list[models.Venue]:
         """Return a list of `Venue` models.
