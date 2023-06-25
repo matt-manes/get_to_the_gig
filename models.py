@@ -91,6 +91,13 @@ class Event:
     genres: Optional[str] = ""
     in_the_future: Optional[bool] = True
 
+    def dump(self) -> str:
+        """Dump field names and values. Primarily for debugging and crash logs."""
+        members = sorted(fields(self), key=lambda field: field.name)
+        return "\n".join(
+            f"{member.name}: {getattr(self, member.name)}" for member in members
+        )
+
     @classmethod
     def new(cls) -> Self:
         return cls(date_added=datetime.now(), in_the_future=True)
