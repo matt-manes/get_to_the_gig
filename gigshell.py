@@ -14,7 +14,7 @@ root = Pathier(__file__).parent
 def add_venue_parser() -> ArgShellParser:
     parser = ArgShellParser()
     parser.add_argument("name", type=str)
-    parser.add_argument("website", type=str)
+    parser.add_argument("url", type=str)
     parser.add_argument(
         "-cal",
         "--calendar_url",
@@ -47,7 +47,7 @@ class Gigshell(DBShell):
         venue = models.Venue(
             args.name,
             models.Address(args.street, args.city, args.state, args.zipcode),
-            args.website,
+            args.url,
             args.calendar_url or args.website,
             datetime.now(),
         )

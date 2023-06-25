@@ -26,7 +26,7 @@ def add_venue(venue: models.Venue) -> bool:
 
     Returns `True` if database transaction was successful."""
 
-    venue.website = venue.website.strip("/")
+    venue.url = venue.url.strip("/")
     venue.calendar_url = venue.calendar_url.strip("/")
     with GigBased() as db:
         if db.venue_in_database(venue):

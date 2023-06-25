@@ -26,7 +26,7 @@ class Address:
 class Venue:
     name: str
     address: Address
-    website: str
+    url: str
     calendar_url: str
     date_added: datetime
     # Scraper files will be named with this + `.py`
@@ -80,8 +80,10 @@ class Event:
     date: Optional[datetime] = None
     acts: Optional[str] = ""
     price: Optional[str] = ""
-    event_url: Optional[str] = ""
-    ticket_url: Optional[str] = ""
+    url: Optional[str] = ""
+    ticket_url: Optional[
+        str
+    ] = ""  # Sometimes the ticketing page is separate from the venue's event page
     act_urls: Optional[str] = ""
     info: Optional[str] = ""
     age_restriction: Optional[str] = ""
