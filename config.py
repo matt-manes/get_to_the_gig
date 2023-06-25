@@ -11,6 +11,7 @@ class Config:
     backup_before_scrape: bool
     drop_future_events: bool
     update_in_the_future: bool
+    drop_all_events: bool
 
     @classmethod
     def load(cls, path: Pathish = Pathier(__file__).parent / "config.toml") -> Self:
