@@ -38,6 +38,7 @@ class GigScraper:
 
     def add_event(self, event: models.Event):
         """Add `event` to database or update the entry if it appears to already be in the database."""
+        event.venue = self.venue.name
         event = self.check_event_year(event)
         event.clean()
         # ADD detections for event already existing
