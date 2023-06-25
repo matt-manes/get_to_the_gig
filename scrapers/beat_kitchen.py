@@ -1,60 +1,75 @@
-import datetime
-from pathier import Pathier
+from datetime import datetime
 import re
+from gig_scraper import GigScraper
+from pathier import Pathier
 import json
 
-from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
 
-# https://www.beatkitchen.com/calendar/
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+import models
 
+# not_ready (This file will be ignored by scrape_venues.py until this comment is removed.)
+# calendar url: https://www.beatkitchen.com/calendar
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
+
+    def parse_events_data(self, source: str) -> list[dict]:
+        # There's a script tag with all the calendar elements in a list of dictionaries format
+        events = re.findall(r"events: \[[^\]]+\]", source)[0]
+        # Fix all the quotes so json module can load it
+        events = events[events.find(":") + 1 :].replace('"', '\\"').replace("'", '"')
+        events = [event.strip() for event in events.splitlines()]
+        # None of the dict keys are quoted
+        for i, event in enumerate(events):
+            if not event.startswith(("{", "}", "[", "]")):
+                key, value = event.split(":", 1)
+                events[i] = f'"{key}":{value}'
+        # Last curly brace has a trailing comma
+        events[-2] = "}"
+        events = "\n".join(events)
+        events = json.loads(events)
+        return events
+
+    @GigScraper.chores
     def scrape(self):
-        self.logger.info("Scrape started")
+        """Scrape calendar."""
         try:
-            url = self.venue_info["calendar_url"]
-            response = get_page(url)
-            src = response.text
-            # There's a script tag with all the calendar elements in a list of dictionaries format
-            events = re.findall(r"events: \[[^\]]+\]", src)[0]
-            # Fix all the quotes so json module can load it
-            events = (
-                events[events.find(":") + 1 :].replace('"', '\\"').replace("'", '"')
-            )
-            events = [event.strip() for event in events.splitlines()]
-            # None of the dict keys are quoted
-            for i, event in enumerate(events):
-                if not event.startswith(("{", "}", "[", "]")):
-                    key, value = event.split(":", 1)
-                    events[i] = f'"{key}":{value}'
-            # Last curly brace has a trailing comma
-            events[-2] = "}"
-            events = "\n".join(events)
-            events = json.loads(events)
-            for event in events:
-                self.reset_event_details()
-                self.event_date = datetime.datetime.strptime(
-                    event["start"], "%Y-%m-%d %H:%M:%S"
+            response = self.get_calendar()
+            soup = self.as_soup(response)
+            try:
+                events = self.parse_events_data(response.text)
+            except Exception as e:
+                raise RuntimeError(
+                    "Failed to parse script tag in 'self.parse_events_data()'"
                 )
-                if datetime.datetime.now() < self.event_date:
-                    self.title = event["title"]
-                    self.acts = event["title"]
-                    url = f"https://www.beatkitchen.com/event-details/{event['id']}"
-                    soup = get_soup(url)
-                    self.genres = soup.find("div", class_="tw-genre").text
-                    self.info = soup.find("div", class_="tw-age-restriction").text
-                    price = soup.find("div", class_="tw-price")
-                    self.price = price.text if price else "Free"
-                    self.event_link = (
+            for listing in events:
+                event = models.Event.new()
+                # self.logger.info(str(event))
+                event.date = datetime.strptime(listing["start"], "%Y-%m-%d %H:%M:%S")
+                if datetime.now() < event.date:
+                    event.title = listing["title"]
+                    event.acts = listing["title"]
+                    event.url = (
+                        f"https://www.beatkitchen.com/event-details/{listing['id']}"
+                    )
+                    soup = self.as_soup(self.get_page(event.url))
+                    event.genres = soup.find("div", class_="tw-genre").text
+                    event.age_restriction = soup.find(
+                        "div", class_="tw-age-restriction"
+                    ).text
+                    price_tag = soup.find("div", class_="tw-price")
+                    event.price = price_tag.text if price_tag else "Free"
+                    event.ticket_url = (
                         soup.find("div", class_="tw-buy-box").find("a").get("href")
                     )
-                    self.event_link = self.event_link[: self.event_link.find("?")]
-                    self.add_event()
-            self.log_success()
+                    event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
+                    self.add_event(event)
         except Exception as e:
-            self.logger.exception("Scrape failed")
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    Venue().scrape()
