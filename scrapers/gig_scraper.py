@@ -2,7 +2,6 @@ import logging
 from datetime import datetime, timedelta
 from functools import cached_property, wraps
 from typing import Iterable
-
 import nocamel
 import requests
 from bs4 import BeautifulSoup
@@ -48,15 +47,6 @@ class GigScraper:
             db.add_event(event)
         self.add_count += 1
 
-    def event_fail(self, event: models.Event):
-        """Call when an exception occurs while scraping a given event.
-        Will log the error with a dump of `event` (scraper code and non present values can help determine culprit)
-        and increment `self.fail_count`."""
-        marker = "'/////////////// EVENT DUMP ///////////////'"
-        event.clean()
-        self.logger.exception(f"\n{marker}\n\n{event.dump()}\n\n{marker}")
-        self.fail_count += 1
-
     @staticmethod
     def as_soup(response: requests.Response) -> BeautifulSoup:
         """Return `response.text` as a `BeautifulSoup` object."""
@@ -75,16 +65,14 @@ class GigScraper:
             event.date = event.date.replace(year=event.date.year + 1)
         return event
 
-    def chores(scrape):
-        """Chores to do before and after running `self.scrape()`."""
-
-        @wraps(scrape)
-        def inner(self):
-            self.prescrape_chores()
-            scrape(self)
-            self.postscrape_chores()
-
-        return inner
+    def event_fail(self, event: models.Event):
+        """Call when an exception occurs while scraping a given event.
+        Will log the error with a dump of `event` (scraper code and non present values can help determine culprit)
+        and increment `self.fail_count`."""
+        marker = "'/////////////// EVENT DUMP ///////////////'"
+        event.clean()
+        self.logger.exception(f"\n{marker}\n\n{event.dump()}\n\n{marker}")
+        self.fail_count += 1
 
     def get_calendar(self) -> requests.Response:
         """Make a request to this venue's calendar url."""
@@ -131,6 +119,19 @@ class GigScraper:
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
 
+    # Seat |========================================== Chores ==========================================|
+
+    def chores(scrape):
+        """Chores to do before and after running `self.scrape()`."""
+
+        @wraps(scrape)
+        def inner(self):
+            self.prescrape_chores()
+            scrape(self)
+            self.postscrape_chores()
+
+        return inner
+
     def postscrape_chores(self):
         """Chores to do after scraping the venue."""
         self.timer.stop()
@@ -154,12 +155,14 @@ class GigScraper:
         self.timer.start()
         self.logger.info("Scrape started.")
 
-    @chores
-    def scrape(self):
-        """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
-        raise NotImplementedError
+    # Seat |===========================================================================================|
 
     def parse_event(self, listing: dict | BeautifulSoup) -> models.Event:
         """Override this to parse a singular event from either a dictionary
         or BeautifulSoup object depending on the venue website."""
+        raise NotImplementedError
+
+    @chores
+    def scrape(self):
+        """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
         raise NotImplementedError
