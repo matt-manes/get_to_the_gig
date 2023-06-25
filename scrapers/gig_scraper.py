@@ -45,7 +45,7 @@ class GigScraper:
             db.add_event(event)
 
     @staticmethod
-    def as_soup(self, response: requests.Response) -> BeautifulSoup:
+    def as_soup(response: requests.Response) -> BeautifulSoup:
         """Return `response.text` as a `BeautifulSoup` object."""
         return BeautifulSoup(response.text, "html.parser")
 
@@ -65,7 +65,7 @@ class GigScraper:
     def chores(scrape):
         """Chores to do before and after running `self.scrape()`."""
 
-        @wraps
+        @wraps(scrape)
         def inner(self):
             self.prescrape_chores()
             scrape(self)
@@ -78,7 +78,7 @@ class GigScraper:
         return self.get_page(self.venue.calendar_url)
 
     @staticmethod
-    def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
+    def get_page(url: str, headers: dict[str, str] = {}) -> requests.Response:
         """Request `url` and return the `requests.Response` object."""
         return requests.get(url, headers=get_agent(True) | headers)
 
