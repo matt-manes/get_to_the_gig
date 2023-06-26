@@ -16,7 +16,9 @@ class Venue(GigScraper):
     def name(self) -> str:
         return Pathier(__file__).stem
 
-    def parse_events_data(self, source: str) -> list[dict]:
+    def get_events(self) -> list[dict]:
+        response = self.get_calendar()
+        source = response.text
         # There's a script tag with all the calendar elements in a list of dictionaries format
         events = re.findall(r"events: \[[^\]]+\]", source)[0]
         # Fix all the quotes so json module can load it
@@ -61,15 +63,14 @@ class Venue(GigScraper):
         try:
             response = self.get_calendar()
             try:
-                events = self.parse_events_data(response.text)
-            except Exception as e:
-                raise RuntimeError(
-                    "Failed to parse script tag in 'self.parse_events_data()'"
-                )
-            for listing in events:
-                event = self.parse_event(listing)
-                if event:
-                    self.add_event(event)
+                events = self.get_events(response.text)
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
         except Exception as e:
             self.logger.exception("Unexpected failure.")
 
