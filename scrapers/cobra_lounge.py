@@ -1,61 +1,73 @@
-import json
 from datetime import datetime, timedelta
-from pathier import Pathier
 import re
-import requests
-from whosyouragent import get_agent
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
+from pathier import Pathier
 
-from gig_scraper_engine import GigScraper, get_page
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
+
+import models
 
 
-# https://cobralounge.com/events/
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+# not_ready (This file will be ignored by scrape_venues.py until this comment is removed.)
+# calendar url: https://cobralounge.com/events
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
 
-    def get_events(self) -> dict:
-        page = get_page(self.venue_info["calendar_url"]).text
-        api_key = re.findall(r'"apiKey":"[a-zA-Z0-9]+"', page)[0]
+    def get_events(self) -> list[dict]:
+        response = self.get_calendar()
+        src = response.text
+        api_key = re.findall(r'"apiKey":"[a-zA-Z0-9]+"', src)[0]
         api_key = api_key.split(":")[1].strip('"')
-        response = requests.get(
+        response = self.get_page(
             "https://events-api.dice.fm/v1/events?page[size]=100&types=linkout,event&filter[venues][]=Cobra%20Lounge",
-            headers={"user-agent": get_agent(), "x-api-key": api_key},
+            {"x-api-key": api_key},
         )
-        return response.json()["data"]
+        return [event for event in response.json()["data"] if event["raw_description"]]
 
-    def scrape(self):
-        self.logger.info("Scrape started")
+    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event:
         try:
-            events = self.get_events()
-            for event in events:
-                if not event["raw_description"]:
-                    continue
-                self.reset_event_details()
-                # The dates listed in a timezone that's +5 hours
-                self.event_date = datetime.strptime(
-                    event["date"], "%Y-%m-%dT%H:%M:%SZ"
-                ) - timedelta(hours=5)
-                self.title = event["name"]
-                self.acts = ", ".join(event["artists"])
-                if event["ticket_types"]:
-                    self.price = (
-                        f"${event['ticket_types'][0]['price']['total']/100:.2f}"
-                    )
-                else:
-                    try:
-                        self.price = f"${event['price']/100:.2f}"
-                    except Exception as e:
-                        self.price = "n/a"
-                self.event_link = event["url"]
-                self.info = event["age_limit"]
-                self.genres = ", ".join(
-                    tag.split(":")[1] for tag in event["genre_tags"]
-                )
-                self.add_event()
-            self.log_success()
+            event = models.Event.new()
+            # The dates listed are timezone that's +5 hours
+            event.date = datetime.strptime(
+                listing["date"], "%Y-%m-%dT%H:%M:%SZ"
+            ) - timedelta(hours=5)
+            event.title = listing["name"]
+            event.acts = ", ".join(listing["artists"])
+            if listing["ticket_types"]:
+                event.price = f"${listing['ticket_types'][0]['price']['total']/100:.2f}"
+            else:
+                try:
+                    event.price = f"${listing['price']/100:.2f}"
+                except Exception as e:
+                    event.price = "n/a"
+            event.url = listing["url"]
+            event.age_restriction = listing["age_limit"]
+            event.genres = ", ".join(tag.split(":")[1] for tag in listing["genre_tags"])
+            return event
         except:
-            self.logger.exception(f"Scrape failed\n{json.dumps(event)}")
+            self.event_fail(event)
+            return None
+
+    @GigScraper.chores
+    def scrape(self):
+        """Scrape calendar."""
+        try:
+            try:
+                events = self.get_events()
+            except Exception as e:
+                self.logger.exception("Failed to retrive events from dice api.")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    Venue().scrape()
