@@ -94,7 +94,7 @@ class GigScraper:
         counter = 0
         while True:
             month_year = f"{date:%m-%Y}"
-            url = f"{self.venue.website}/api/open/GetItemsByMonth?month={month_year}&collectionId={collection_id}"
+            url = f"{self.venue.url}/api/open/GetItemsByMonth?month={month_year}&collectionId={collection_id}"
             response = self.get_page(url)
             # Length of 2 means no content
             if len(response.content) == 2 or counter >= 12:
