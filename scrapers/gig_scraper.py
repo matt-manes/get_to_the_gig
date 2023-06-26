@@ -103,6 +103,16 @@ class GigScraper:
             date += timedelta(weeks=4)
             counter += 1
 
+    def get_squarespace_events(self, collection_id: str) -> list[dict]:
+        """Effectively exhaust and flatten `self.get_squarespace_calendar()`.
+
+        `collection_id` should be rendered somewhere in the calendar HTML."""
+        return [
+            event
+            for month in self.get_squarespace_calendar(collection_id)
+            for event in month
+        ]
+
     def init_logger(self):
         log_dir = root / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
