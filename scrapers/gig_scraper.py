@@ -171,11 +171,11 @@ class GigScraper:
         >>> try:
         >>>     event = models.Event.new()
         >>>     # Populate `event` from `listing`.
+        >>>     return event
         >>> except Exception:
         >>>     # This will log the exception and current contents of `event`
         >>>     self.event_fail(event)
-        >>>     return None
-        >>> return event"""
+        >>>     return None"""
         raise NotImplementedError
 
     @chores

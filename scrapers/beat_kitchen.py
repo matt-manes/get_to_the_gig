@@ -52,10 +52,10 @@ class Venue(GigScraper):
                 soup.find("div", class_="tw-buy-box").find("a").get("href")
             )
             event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
+            return event
         except Exception as e:
             self.event_fail(event)
             return None
-        return event
 
     @GigScraper.chores
     def scrape(self):

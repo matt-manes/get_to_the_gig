@@ -28,10 +28,10 @@ class Venue(GigScraper):
         try:
             event = models.Event.new()
             # Populate `event` from `listing`.
-        except:
+            return event
+        except Exception:
             self.event_fail(event)
             return None
-        return event
 
     @GigScraper.chores
     def scrape(self):
