@@ -157,9 +157,19 @@ class GigScraper:
 
     # Seat |===========================================================================================|
 
-    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event:
+    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event | None:
         """Override this to parse a singular event from either a dictionary
-        or BeautifulSoup object depending on the venue website."""
+        or BeautifulSoup object depending on the venue website.
+
+        Basic template:
+        >>> try:
+        >>>     event = models.Event.new()
+        >>>     # Populate `event` from `listing`.
+        >>> except Exception:
+        >>>     # This will log the exception and current contents of `event`
+        >>>     self.event_fail(event)
+        >>>     return None
+        >>> return event"""
         raise NotImplementedError
 
     @chores
