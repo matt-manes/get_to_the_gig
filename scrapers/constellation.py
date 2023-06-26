@@ -1,55 +1,68 @@
-import json
 from datetime import datetime
+
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
 from pathier import Pathier
-from typing import Iterable
-from bs4 import Tag
 
-from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
+
+import models
 
 
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+# calendar url: https://constellation-chicago.com
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
 
-    def get_event_list(self) -> Iterable[list[Tag]]:
+    def get_events(self) -> list[BeautifulSoup]:
         page = 1
+        events = []
         while True:
-            soup = get_soup(f"{self.venue_info['calendar_url']}?sepage={page}")
-            events = soup.find_all(
-                "div",
-                class_="event-info-block",
-            )
-            if not events:
+            soup = self.as_soup(self.get_page(f"{self.venue.url}/?sepage={page}"))
+            listings = soup.find_all("div", class_="event-info-block")
+            if not listings:
                 break
-            yield events
+            events.extend(listings)
             page += 1
+        return events
 
-    def scrape(self):
-        self.logger.info("Scrape started")
+    def parse_event(self, data: BeautifulSoup) -> models.Event | None:
         try:
-            events = [
-                event for event_list in self.get_event_list() for event in event_list
-            ]
+            event = models.Event.new()
+            event.date = datetime.strptime(
+                f"{data.find('p', class_='fs-18 bold mt-1r date').text}-{data.find('span',class_='see-showtime').text}",
+                "%a %b %d-%H:%M%p",
+            )
+            event.date = event.date.replace(year=datetime.now().year)
+            if (datetime.now() - event.date).days > 30:
+                event.date = event.date.replace(year=datetime.now().year + 1)
+            event.title = data.find("a").text
+            event.acts = event.title
+            event.price = data.find("p", class_="fs-12 ages-price").text
+            event.url = data.find("a").get("href")
+            event.genres = data.find("p", class_="fs-12 genre").text
+            return event
+        except Exception:
+            self.event_fail(event)
+            return None
 
-            for event in events:
-                self.reset_event_details()
-                self.event_date = datetime.strptime(
-                    f"{event.find('p', class_='fs-18 bold mt-1r date').text}-{event.find('span',class_='see-showtime').text}",
-                    "%a %b %d-%H:%M%p",
-                )
-                self.event_date = self.event_date.replace(year=datetime.now().year)
-                if (datetime.now() - self.event_date).days > 30:
-                    self.event_date.replace(year=datetime.now().year + 1)
-                self.title = event.find("a").text
-                self.acts = self.title
-                self.price = event.find("p", class_="fs-12 ages-price").text
-                self.event_link = event.find("a").get("href")
-                self.genres = event.find("p", class_="fs-12 genre").text
-                self.add_event()
-            self.log_success()
-        except:
-            self.logger.exception(f"Scrape failed")
+    @GigScraper.chores
+    def scrape(self):
+        try:
+            try:
+                events = self.get_events()
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    Venue().scrape()
