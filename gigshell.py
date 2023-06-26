@@ -48,7 +48,7 @@ class Gigshell(DBShell):
             args.name,
             models.Address(args.street, args.city, args.state, args.zipcode),
             args.url,
-            args.calendar_url or args.website,
+            args.calendar_url or args.url,
             datetime.now(),
         )
         try:
