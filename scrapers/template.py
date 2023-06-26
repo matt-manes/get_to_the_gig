@@ -17,26 +17,34 @@ class Venue(GigScraper):
     def name(self) -> str:
         return Pathier(__file__).stem
 
-    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event:
-        event = models.Event.new()
-        """ Parsing code """
+    def get_events(self) -> list[dict | BeautifulSoup]:
+        response = self.get_calendar()
+        soup = self.as_soup(response)
+        # Extract events
+        events = []
+        return events
+
+    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event | None:
+        try:
+            event = models.Event.new()
+            # Populate `event` from `listing`.
+        except:
+            self.event_fail(event)
+            return None
         return event
 
     @GigScraper.chores
     def scrape(self):
-        """Scrape calendar."""
         try:
-            response = self.get_calendar()
-            soup = self.as_soup(response)
-            events: dict | BeautifulSoup
-            for listing in events:
-                try:
+            try:
+                events = self.get_events()
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
                     event = self.parse_event(listing)
-                    # self.parse_event should determine whether `event` is in the future or not
-                    if event.in_the_future:
+                    if event:
                         self.add_event(event)
-                except Exception as e:
-                    self.event_fail(event)
         except Exception as e:
             self.logger.exception("Unexpected failure.")
 

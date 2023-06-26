@@ -155,10 +155,14 @@ class GigScraper:
         self.timer.start()
         self.logger.info("Scrape started.")
 
-    # Seat |===========================================================================================|
+    # Seat |====================================== Overrides ======================================|
+
+    def get_events(self) -> list[dict | BeautifulSoup]:
+        """Fetch calendar and prepare data."""
+        raise NotImplementedError
 
     def parse_event(self, listing: dict | BeautifulSoup) -> models.Event | None:
-        """Override this to parse a singular event from either a dictionary
+        """Parse a singular event from either a dictionary
         or BeautifulSoup object depending on the venue website.
 
         Basic template:
