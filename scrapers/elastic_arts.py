@@ -1,35 +1,57 @@
-from datetime import datetime
-from pathier import Pathier
 import re
+from datetime import datetime
 
-from gig_scraper_engine import GigScraper, get_soup, get_text, get_page
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
+from pathier import Pathier
 
-# https://elasticarts.org/events
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
 
-    def scrape(self):
-        self.logger.info("Scrape started")
+import models
+
+
+# not_ready (This file will be ignored by scrape_venues.py until this comment is removed.)
+# calendar url: https://elasticarts.org/events
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
+
+    def get_events(self) -> list[dict]:
+        response = self.get_calendar()
+        collection_id = re.findall(
+            r'collectionId":"[a-zA-Z0-9]+"', response.text.replace("&quot;", '"')
+        )[0].split('"')[2]
+        return self.get_squarespace_events(collection_id)
+
+    def parse_event(self, data: dict) -> models.Event | None:
         try:
-            page = get_page(self.venue_info["calendar_url"])
-            collection_id = re.findall(
-                r'collectionId":"[a-zA-Z0-9]+"', page.text.replace("&quot;", '"')
-            )[0].split('"')[2]
-            for month in self.get_squarespace_calendar(collection_id):
-                for event in month:
-                    self.reset_event_details()
-                    self.event_date = datetime.fromtimestamp(event["startDate"] / 1000)
-                    self.title = event["title"]
-                    self.price = "$15+"
-                    self.event_link = (
-                        f"{self.venue_info['website'].strip('/')}{event['fullUrl']}"
-                    )
-                    self.add_event()
-            self.log_success()
-        except:
-            self.logger.exception(f"Scrape failed.")
+            event = models.Event.new()
+            event.date = datetime.fromtimestamp(round(data["startDate"] / 1000))
+            event.title = data["title"]
+            event.price = "$15+"
+            event.url = f"{self.venue.url}/{data['fullUrl']}"
+            return event
+        except Exception:
+            self.event_fail(event)
+            return None
+
+    @GigScraper.chores
+    def scrape(self):
+        try:
+            try:
+                events = self.get_events()
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    Venue().scrape()
