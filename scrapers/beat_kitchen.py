@@ -34,14 +34,14 @@ class Venue(GigScraper):
         events = json.loads(events)
         return events
 
-    def parse_event(self, listing: dict) -> models.Event | None:
+    def parse_event(self, data: dict) -> models.Event | None:
         """Parse an individual event. Returns `None` if an exception occurs and dumps details to log."""
         try:
             event = models.Event.new()
-            event.date = datetime.strptime(listing["start"], "%Y-%m-%d %H:%M:%S")
-            event.title = listing["title"]
-            event.acts = listing["title"]
-            event.url = f"https://www.beatkitchen.com/event-details/{listing['id']}"
+            event.date = datetime.strptime(data["start"], "%Y-%m-%d %H:%M:%S")
+            event.title = data["title"]
+            event.acts = data["title"]
+            event.url = f"https://www.beatkitchen.com/event-details/{data['id']}"
             soup = self.as_soup(self.get_page(event.url))
             event.genres = soup.find("div", class_="tw-genre").text
             event.age_restriction = soup.find("div", class_="tw-age-restriction").text

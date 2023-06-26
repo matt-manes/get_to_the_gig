@@ -163,14 +163,14 @@ class GigScraper:
         """Fetch calendar and prepare data."""
         raise NotImplementedError
 
-    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event | None:
+    def parse_event(self, data: dict | BeautifulSoup) -> models.Event | None:
         """Parse a singular event from either a dictionary
         or BeautifulSoup object depending on the venue website.
 
         Basic template:
         >>> try:
         >>>     event = models.Event.new()
-        >>>     # Populate `event` from `listing`.
+        >>>     # Populate `event` from `data`.
         >>>     return event
         >>> except Exception:
         >>>     # This will log the exception and current contents of `event`

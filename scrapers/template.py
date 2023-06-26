@@ -24,10 +24,10 @@ class Venue(GigScraper):
         events = []
         return events
 
-    def parse_event(self, listing: dict | BeautifulSoup) -> models.Event | None:
+    def parse_event(self, data: dict | BeautifulSoup) -> models.Event | None:
         try:
             event = models.Event.new()
-            # Populate `event` from `listing`.
+            # Populate `event` from `data`.
             return event
         except Exception:
             self.event_fail(event)
