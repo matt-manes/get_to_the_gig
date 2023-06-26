@@ -42,7 +42,7 @@ class GigScraper:
         event.venue = self.venue.name
         event = self.check_event_year(event)
         event.clean()
-        if event.date < datetime.today:
+        if event.date < datetime.today():
             event.in_the_future = False
         # ADD detections for event already existing
         with GigBased() as db:
