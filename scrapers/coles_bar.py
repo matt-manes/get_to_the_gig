@@ -1,20 +1,29 @@
 import json
 import re
 from datetime import datetime
+
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
 from pathier import Pathier
 
-from gig_scraper_engine import GigScraper, get_page, get_soup
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
 
+import models
 
-# https://www.colesbarchicago.com/
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+# not_ready (This file will be ignored by scrape_venues.py until this comment is removed.)
+# calendar url: https://www.colesbarchicago.com
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
 
-    def get_event_links(self) -> list[str]:
-        soup = get_soup("https://www.colesbarchicago.com/")
+    def get_events(self) -> list[str]:
+        response = self.get_calendar()
+        soup = self.as_soup(response)
+        # Extract events
         events = []
-        for div in soup.find_all("div", class_="image-wrapper"):
+        for div in soup.find_all("div", class_="rhp-event-thumb"):
             try:
                 url = div.find("a").get("href")
                 events.append(url)
@@ -22,39 +31,42 @@ class Scraper(GigScraper):
                 pass
         return events
 
-    def get_event_data(self, url: str) -> dict | None:
-        soup = get_soup(url)
-        data = None
-        for script in soup.find_all("script"):
-            if "General Data Points" in script.text:
-                data = script.text
-                break
-        if not data:
-            return data
-        data = re.findall(r"// Track[^;]+", data)[0]
-        data = data[data.find("{") : data.rfind("}") + 1].replace("'", '"')
-        return json.loads(data)["ecommerce"]["detail"]["products"][0]
-
-    def scrape(self):
-        self.logger.info("Scrape started")
+    def parse_event(self, url: str) -> models.Event | None:
         try:
-            events = self.get_event_links()
-            for event in events:
-                self.reset_event_details()
-                data = self.get_event_data(event)
-                self.event_date = datetime.strptime(
-                    data["variant"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                if self.event_date > datetime.now():
-                    self.title = data["name"]
-                    self.acts = self.title
-                    self.price = f"${data['priceDetails'][0]['price']}"
-                    self.event_link = event
-                    self.add_event()
-            self.log_success()
-        except:
-            self.logger.exception("Scrape failed")
+            event = models.Event.new()
+            event.url = url
+            soup = self.as_soup(self.get_page(url))
+            for script in soup.find_all("script"):
+                if script.get("type") == "application/ld+json":
+                    data = json.loads(script.text)
+                    event.date = datetime.strptime(
+                        data["startDate"], "%Y-%m-%dT%H:%M:%S-0500"
+                    )
+                    event.title = data["name"]
+                    event.acts = event.title
+                    event.price = f"${data['offers']['price']}"
+                    event.ticket_url = data["offers"]["url"]
+                    return event
+            raise Exception("Could not find event markup script tag.")
+        except Exception:
+            self.event_fail(event)
+            return None
+
+    @GigScraper.chores
+    def scrape(self):
+        try:
+            try:
+                events = self.get_events()
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    Venue().scrape()
