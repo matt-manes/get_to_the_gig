@@ -33,11 +33,11 @@ class Venue(GigScraper):
         events = json.loads(events)
         return events
 
-    def parse_event(self, listing: dict) -> models.Event:
-        """Parse an individual event."""
-        event = models.Event.new()
-        event.date = datetime.strptime(listing["start"], "%Y-%m-%d %H:%M:%S")
-        if datetime.now() < event.date:
+    def parse_event(self, listing: dict) -> models.Event | None:
+        """Parse an individual event. Returns `None` if an exception occurs and dumps details to log."""
+        try:
+            event = models.Event.new()
+            event.date = datetime.strptime(listing["start"], "%Y-%m-%d %H:%M:%S")
             event.title = listing["title"]
             event.acts = listing["title"]
             event.url = f"https://www.beatkitchen.com/event-details/{listing['id']}"
@@ -50,8 +50,9 @@ class Venue(GigScraper):
                 soup.find("div", class_="tw-buy-box").find("a").get("href")
             )
             event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
-        else:
-            event.in_the_future = False
+        except Exception as e:
+            self.event_fail(event)
+            return None
         return event
 
     @GigScraper.chores
@@ -59,7 +60,6 @@ class Venue(GigScraper):
         """Scrape calendar."""
         try:
             response = self.get_calendar()
-            soup = self.as_soup(response)
             try:
                 events = self.parse_events_data(response.text)
             except Exception as e:
@@ -67,12 +67,9 @@ class Venue(GigScraper):
                     "Failed to parse script tag in 'self.parse_events_data()'"
                 )
             for listing in events:
-                try:
-                    event = self.parse_event(listing)
-                    if event.in_the_future:
-                        self.add_event(event)
-                except Exception as e:
-                    self.event_fail(event)
+                event = self.parse_event(listing)
+                if event:
+                    self.add_event(event)
         except Exception as e:
             self.logger.exception("Unexpected failure.")
 
