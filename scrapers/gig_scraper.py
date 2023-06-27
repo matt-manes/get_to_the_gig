@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from functools import cached_property, wraps
 from typing import Iterable
+
 import nocamel
 import requests
 from bs4 import BeautifulSoup
@@ -39,6 +40,10 @@ class GigScraper:
 
     # Seat |============================ Requesters ============================|
 
+    def as_soup(self, response: requests.Response) -> BeautifulSoup:
+        """Return `response.text` as a `BeautifulSoup` object."""
+        return BeautifulSoup(response.text, "html.parser")
+
     def get_calendar(self) -> requests.Response:
         """Make a request to this venue's calendar url."""
         return self.get_page(self.venue.calendar_url)
@@ -46,6 +51,10 @@ class GigScraper:
     def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
         """Request `url` and return the `requests.Response` object."""
         return requests.get(url, headers=get_agent(True) | headers)
+
+    def get_soup(self, url: str, headers: dict[str, str] = {}) -> BeautifulSoup:
+        """Request `url` with `headers` and return `BeautifulSoup` object."""
+        return self.as_soup(self.get_page(url, headers))
 
     def get_squarespace_calendar(self, collection_id: str) -> Iterable[dict]:
         """Generator that yields a dictionary of event details for venues
@@ -74,10 +83,6 @@ class GigScraper:
             for month in self.get_squarespace_calendar(collection_id)
             for event in month
         ]
-
-    def as_soup(self, response: requests.Response) -> BeautifulSoup:
-        """Return `response.text` as a `BeautifulSoup` object."""
-        return BeautifulSoup(response.text, "html.parser")
 
     # Seat =========================================================================
 
