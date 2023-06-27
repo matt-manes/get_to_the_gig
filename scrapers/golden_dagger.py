@@ -1,60 +1,83 @@
 from datetime import datetime
+
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
 from pathier import Pathier
 
-from gig_scraper_engine import GigScraper, get_soup, get_text
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
+
+import models
 
 
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+# calendar url: https://goldendagger.com
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
 
-    def scrape(self):
-        self.logger.info("Scrape started")
+    def get_events(self) -> list[BeautifulSoup]:
+        response = self.get_calendar()
+        soup = self.as_soup(response)
+        pages = int(
+            soup.find("span", class_="tw-paginate-text")
+            .findChildren("span", class_="link")[-1]
+            .a.text
+        )
+        events = []
+        for page in range(pages):
+            if page > 0:
+                soup = self.get_soup(f"{self.venue.calendar_url}?twpage={page}")
+            events.extend(soup.find_all("div", class_="tw-name"))
+        return events
+
+    def parse_event(self, data: BeautifulSoup) -> models.Event | None:
         try:
-            soup = get_soup(self.venue_info["calendar_url"])
-            pages = int(
-                soup.find("span", class_="tw-paginate-text")
-                .findChildren("span", class_="link")[-1]
-                .a.text
+            event = models.Event.new()
+            event.url = data.a.get("href")
+            soup = self.get_soup(event.url)
+            day = self.clean(soup.find("span", class_="tw-day-of-week").text)
+            date = self.clean(soup.find("span", class_="tw-event-date").text)
+            time = self.clean(soup.find("span", class_="tw-event-time").text)
+            event.date = datetime.strptime(
+                f"{day} {date} {time}", "%a %B %d, %Y %I:%M %p"
             )
-            for page in range(pages):
-                if page > 0:
-                    soup = get_soup(f'{self.venue_info["calendar_url"]}?twpage={page}')
-                events = soup.find_all("div", class_="tw-name")
-                for event in events:
-                    self.reset_event_details()
-                    event_link = event.a.get("href")
-                    soup = get_soup(event_link)
-                    day = get_text(soup.find("span", class_="tw-day-of-week"))
-                    date = get_text(soup.find("span", class_="tw-event-date"))
-                    time = get_text(soup.find("span", class_="tw-event-time"))
-                    self.event_date = datetime.strptime(
-                        f"{day} {date} {time}", "%a %B %d, %Y %I:%M %p"
-                    )
-                    self.title = get_text(soup.find("div", class_="tw-name"))
-                    self.acts = "\n".join(
-                        act.text
-                        for act in soup.find(
-                            "div", class_="tw-opening-act"
-                        ).findChildren("span")
-                    )
-                    self.price = get_text(soup.find("div", class_="tw-price"))
-                    self.event_link = event_link
-                    self.act_links = "\n".join(
-                        ele.get("href")
-                        for ele in soup.find_all("a", class_="officialwebsite")
-                    )
-                    self.info = "\n".join(
-                        subsection.find("div", class_="tw-description").text
-                        for subsection in soup.find_all("div", class_="tw-subsection")
-                        if subsection.find("div", class_="tw-description") is not None
-                    )
-                    self.genres = get_text(soup.find("div", class_="tw-genre"))
-                    self.add_event()
-            self.log_success()
-        except:
-            self.logger.exception("Scrape failed")
+            event.title = self.clean(soup.find("div", class_="tw-name").text)
+            event.acts = ", ".join(
+                act.text
+                for act in soup.find("div", class_="tw-opening-act").findChildren(
+                    "span"
+                )
+            )
+            event.price = self.clean(soup.find("div", class_="tw-price").text)
+            event.act_urls = "\n".join(
+                subsection.find("div", class_="tw-description").text
+                for subsection in soup.find_all("div", class_="tw-subsection")
+                if subsection.find("div", class_="tw-description") is not None
+            )
+            event.genres = self.clean(soup.find("div", class_="tw-genre").text)
+            return event
+        except Exception:
+            self.event_fail(event)
+            return None
+
+    @GigScraper.chores
+    def scrape(self):
+        try:
+            try:
+                events = self.get_events()
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    venue = Venue()
+    venue.scrape()
+    print(venue.last_log)
