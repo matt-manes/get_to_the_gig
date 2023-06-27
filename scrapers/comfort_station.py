@@ -37,21 +37,6 @@ class Venue(GigScraper):
             self.event_fail(event)
             return None
 
-    @GigScraper.chores
-    def scrape(self):
-        try:
-            try:
-                events = self.get_events()
-            except Exception:
-                self.logger.exception("Error in get_events().")
-            else:
-                for listing in events:
-                    event = self.parse_event(listing)
-                    if event:
-                        self.add_event(event)
-        except Exception as e:
-            self.logger.exception("Unexpected failure.")
-
 
 if __name__ == "__main__":
     venue = Venue()

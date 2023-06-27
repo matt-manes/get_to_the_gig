@@ -51,22 +51,6 @@ class Venue(GigScraper):
             self.event_fail(event)
             return None
 
-    @GigScraper.chores
-    def scrape(self):
-        """Scrape calendar."""
-        try:
-            try:
-                events = self.get_events()
-            except Exception as e:
-                self.logger.exception("Failed to retrive events from dice api.")
-            else:
-                for listing in events:
-                    event = self.parse_event(listing)
-                    if event:
-                        self.add_event(event)
-        except Exception as e:
-            self.logger.exception("Unexpected failure.")
-
 
 if __name__ == "__main__":
     venue = Venue()

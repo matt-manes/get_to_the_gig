@@ -205,5 +205,16 @@ class GigScraper:
 
     @chores
     def scrape(self):
-        """Override this in a specific Venue's subclass and decorate with `GigScraper.chores`."""
-        raise NotImplementedError
+        """If this is overridden, it should be decorated with `GigScraper.chores`."""
+        try:
+            try:
+                events = self.get_events()
+            except Exception:
+                self.logger.exception("Error in get_events().")
+            else:
+                for listing in events:
+                    event = self.parse_event(listing)
+                    if event:
+                        self.add_event(event)
+        except Exception as e:
+            self.logger.exception("Unexpected failure.")
