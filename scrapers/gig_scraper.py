@@ -142,6 +142,10 @@ class GigScraper:
     def last_log(self) -> str:
         return (root / "logs" / f"{self.name}.py").split()[-1]
 
+    def clean(self, text: str) -> str:
+        """Strip ` \\n\\r\\t` and remove `"` from `text`."""
+        return text.strip(" \n\t\r").replace('"', "")
+
     # Seat |========================================== Chores ==========================================|
 
     def chores(scrape):
