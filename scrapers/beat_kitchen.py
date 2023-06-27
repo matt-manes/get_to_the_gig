@@ -47,10 +47,13 @@ class Venue(GigScraper):
             event.age_restriction = soup.find("div", class_="tw-age-restriction").text
             price_tag = soup.find("div", class_="tw-price")
             event.price = price_tag.text if price_tag else "Free"
-            event.ticket_url = (
-                soup.find("div", class_="tw-buy-box").find("a").get("href")
-            )
-            event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
+            try:
+                event.ticket_url = (
+                    soup.find("div", class_="tw-buy-box").find("a").get("href")
+                )
+                event.ticket_url = event.ticket_url[: event.ticket_url.find("?")]
+            except Exception as e:
+                pass
             return event
         except Exception as e:
             self.event_fail(event)
