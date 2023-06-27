@@ -50,4 +50,6 @@ class Venue(GigScraper):
 
 
 if __name__ == "__main__":
-    Venue().scrape()
+    venue = Venue()
+    venue.scrape()
+    print(venue.last_log)
