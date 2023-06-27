@@ -37,51 +37,13 @@ class GigScraper:
         with GigBased() as db:
             return db.get_venue(nocamel.convert_string(self.name).lower())
 
-    def add_event(self, event: models.Event):
-        """Add `event` to database or update the entry if it appears to already be in the database."""
-        event.venue = self.venue.name
-        event = self.check_event_year(event)
-        event.clean()
-        if event.date < datetime.today():
-            event.in_the_future = False
-        # ADD detections for event already existing
-        with GigBased() as db:
-            db.add_event(event)
-        self.add_count += 1
-
-    @staticmethod
-    def as_soup(response: requests.Response) -> BeautifulSoup:
-        """Return `response.text` as a `BeautifulSoup` object."""
-        return BeautifulSoup(response.text, "html.parser")
-
-    def check_event_year(self, event: models.Event) -> models.Event:
-        """If the event date looks to be more than 30 days in the past, increase the year by 1.
-
-        Some venues don't list the year, so if the event looks to be in the past, it's probably next year.
-
-        e.g. it's currently December and the event is in January,
-        but no year listed may result in a datetime for January of this year instead of next year.
-
-        Use of this function assumes the venue removes previous events from their website within 30 days after the event."""
-        if (datetime.now() - event.date).days > 30:
-            event.date = event.date.replace(year=event.date.year + 1)
-        return event
-
-    def event_fail(self, event: models.Event):
-        """Call when an exception occurs while scraping a given event.
-        Will log the error with a dump of `event` (scraper code and non present values can help determine culprit)
-        and increment `self.fail_count`."""
-        marker = "'/////////////// EVENT DUMP ///////////////'"
-        event.clean()
-        self.logger.exception(f"\n{marker}\n\n{event.dump()}\n\n{marker}")
-        self.fail_count += 1
+    # Seat |============================ Requesters ============================|
 
     def get_calendar(self) -> requests.Response:
         """Make a request to this venue's calendar url."""
         return self.get_page(self.venue.calendar_url)
 
-    @staticmethod
-    def get_page(url: str, headers: dict[str, str] = {}) -> requests.Response:
+    def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
         """Request `url` and return the `requests.Response` object."""
         return requests.get(url, headers=get_agent(True) | headers)
 
@@ -112,6 +74,46 @@ class GigScraper:
             for month in self.get_squarespace_calendar(collection_id)
             for event in month
         ]
+
+    def as_soup(self, response: requests.Response) -> BeautifulSoup:
+        """Return `response.text` as a `BeautifulSoup` object."""
+        return BeautifulSoup(response.text, "html.parser")
+
+    # Seat =========================================================================
+
+    def add_event(self, event: models.Event):
+        """Add `event` to database or update the entry if it appears to already be in the database."""
+        event.venue = self.venue.name
+        event = self.check_event_year(event)
+        event.clean()
+        if event.date < datetime.today():
+            event.in_the_future = False
+        # ADD detections for event already existing
+        with GigBased() as db:
+            db.add_event(event)
+        self.add_count += 1
+
+    def check_event_year(self, event: models.Event) -> models.Event:
+        """If the event date looks to be more than 30 days in the past, increase the year by 1.
+
+        Some venues don't list the year, so if the event looks to be in the past, it's probably next year.
+
+        e.g. it's currently December and the event is in January,
+        but no year listed may result in a datetime for January of this year instead of next year.
+
+        Use of this function assumes the venue removes previous events from their website within 30 days after the event."""
+        if (datetime.now() - event.date).days > 30:
+            event.date = event.date.replace(year=event.date.year + 1)
+        return event
+
+    def event_fail(self, event: models.Event):
+        """Call when an exception occurs while scraping a given event.
+        Will log the error with a dump of `event` (scraper code and non present values can help determine culprit)
+        and increment `self.fail_count`."""
+        marker = "'/////////////// EVENT DUMP ///////////////'"
+        event.clean()
+        self.logger.exception(f"\n{marker}\n\n{event.dump()}\n\n{marker}")
+        self.fail_count += 1
 
     def init_logger(self):
         log_dir = root / "logs"
