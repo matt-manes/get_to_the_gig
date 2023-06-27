@@ -138,6 +138,10 @@ class GigScraper:
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
 
+    @property
+    def last_log(self) -> str:
+        return (root / "logs" / f"{self.name}.py").split()[-1]
+
     # Seat |========================================== Chores ==========================================|
 
     def chores(scrape):
