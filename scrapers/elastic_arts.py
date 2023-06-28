@@ -11,7 +11,6 @@ root = Pathier(__file__).parent
 import models
 
 
-# not_ready (This file will be ignored by scrape_venues.py until this comment is removed.)
 # calendar url: https://elasticarts.org/events
 class Venue(GigScraper):
     @property
