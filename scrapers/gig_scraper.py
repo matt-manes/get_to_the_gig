@@ -184,13 +184,12 @@ class GigScraper:
 
     # Seat |====================================== Overrides ======================================|
 
-    def get_events(self) -> list[dict | BeautifulSoup]:
+    def get_events(self) -> list[dict | BeautifulSoup | str]:
         """Fetch calendar and prepare data."""
         raise NotImplementedError
 
-    def parse_event(self, data: dict | BeautifulSoup) -> models.Event | None:
-        """Parse a singular event from either a dictionary
-        or BeautifulSoup object depending on the venue website.
+    def parse_event(self, data: dict | BeautifulSoup | str) -> models.Event | None:
+        """Parse a singular event from either a dictionary, BeautifulSoup object, or a url depending on the venue website.
 
         Basic template:
         >>> try:

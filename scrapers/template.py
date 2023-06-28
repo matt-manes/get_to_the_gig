@@ -17,14 +17,14 @@ class Venue(GigScraper):
     def name(self) -> str:
         return Pathier(__file__).stem
 
-    def get_events(self) -> list[dict | BeautifulSoup]:
+    def get_events(self) -> list[dict | BeautifulSoup | str]:
         response = self.get_calendar()
         soup = self.as_soup(response)
         # Extract events
         events = []
         return events
 
-    def parse_event(self, data: dict | BeautifulSoup) -> models.Event | None:
+    def parse_event(self, data: dict | BeautifulSoup | str) -> models.Event | None:
         try:
             event = models.Event.new()
             # Populate `event` from `data`.
