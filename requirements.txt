@@ -1,9 +1,13 @@
+argshell
 bs4
+dacite
 databased
 gitbetter
+griddle
+nocamel
 noiftimer
 pathier
 printbuddies
 requests
-seleniumuser
+typing_extensions
 whosyouragent
