@@ -1,98 +1,93 @@
+import json
+import re
 from datetime import datetime
+
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
 from pathier import Pathier
-from time import sleep
 
-from gig_scraper_engine import GigScraper, get_soup, get_text
-from seleniumuser import User
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
+
+import models
 
 
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+# calendar url: https://lh-st.com
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
 
-    def scrape(self):
-        self.logger.info("Scrape started")
-        user = User(headless=True)
+    def get_events(self) -> list[str]:
+        response = self.get_calendar()
+        soup = self.as_soup(response)
+        # Extract events
+        events = [
+            div.find("a").get("href")
+            for div in soup.find_all(
+                "div", class_="card-footer text-start align-items-center"
+            )
+            if self.venue.name.split()[0] in div.find("span").text
+        ]
+        return events
+
+    def parse_event(self, url: str) -> models.Event | None:
         try:
-            soup = get_soup(self.venue_info["calendar_url"])
-            event_links = [
-                event.div.div.a.get("href")
-                for event in soup.find_all("div", attrs={"data-venue": "Lincoln Hall"})
-            ]
-            for event_link in event_links:
-                self.reset_event_details()
-                user.get(event_link)
-                try:
-                    user.wait_until(
-                        lambda: user.find('//*[@class="table tessera-show-tickets"]')
-                    )
-                except Exception as e:
-                    pass
-                sleep(1)
-                soup = user.get_soup()
-                date = get_text(soup.find("strong", class_="month"))
-                time = get_text(soup.find("div", class_="time-item text-doors").span)
-                time = time.split(" | ")[1]
-                time = time[: time.find(" ")]
-                self.event_date = datetime.strptime(
-                    f"{self.today.year} {date} {time}",
-                    "%Y %B %d %I%p" if ":" not in time else "%Y %B %d %I:%M%p",
+            event = models.Event.new()
+            event.url = url
+            soup = self.get_soup(url)
+            main = soup.find("div", class_="mainContent")
+            event.title = f"{main.find('div').text} {main.find_all('div')[1].find('h2').text[:-1]}"
+            script = soup.find("body").find("script").text
+            id_ = re.findall(r"eventID: '([0-9]+)'", script)[0]
+            date = re.findall(r"dateandTime: '([0-9 a-zA-Z/:]+)'", script)[0]
+            event.date = datetime.strptime(date, "%m/%d/%Y %I:%M %p")
+            try:
+                headliner = (
+                    soup.find("div", class_="tessera-artists").find("h2").find("a")
                 )
-                self.check_event_date_year()
-                self.title = get_text(
-                    soup.find("div", class_="tessera-artists").h2
-                ).strip(",")
-                acts = [self.title]
+                acts = [(headliner.text, headliner.get("href"))]
+            except Exception as e:
+                headliner = soup.find("div", class_="tessera-artists").find("h2")
+                acts = [(headliner.text, "")]
+            if supports := soup.find("div", class_="additional_artists"):
                 try:
-                    supporting_acts = [
-                        get_text(ele).strip(",")
-                        for ele in soup.find(
-                            "div", class_="additional-artists"
-                        ).find_children("span")
-                        if get_text(ele) != ","
-                    ]
-                except:
-                    supporting_acts = []
-                self.acts = "\n".join(acts + supporting_acts)
-                try:
-                    self.price = get_text(
-                        soup.find(
-                            "table", class_="table tessera-show-tickets"
-                        ).tbody.tr.find_all("td")[1]
-                    )
-                except:
-                    self.price = "Free probably"
-                self.event_link = event_link
-                try:
-                    act_links = [
-                        soup.find("div", class_="tessera-artists").h2.a.get("href")
-                    ]
-                except:
-                    act_links = []
-                try:
-                    act_links.extend(
+                    acts.extend(
                         [
-                            ele.a.get("href")
-                            for ele in soup.find(
-                                "div", class_="additional-artists"
-                            ).find_children("span")
-                            if ele.a is not None
+                            (support.text, support.get("href"))
+                            for support in supports.find_all("a")
                         ]
                     )
-                except:
-                    pass
-                self.act_links = "\n".join(
-                    link for link in act_links if "spotify" not in link
-                )
-                self.info = get_text(soup.find("div", class_="ages").span) + "\n"
-                self.info += get_text(soup.find("div", class_="show-description"))
-                self.add_event()
+                except Exception as e:
+                    acts.extend(
+                        [(support.text, "") for support in supports.find_all("span")]
+                    )
+            event.acts = ", ".join(act[0] for act in acts)
+            event.act_urls = ", ".join(act[1] for act in acts if act[1] != "")
+            event.age_restriction = soup.find("div", class_="ages").text
 
-            self.log_success()
-        except:
-            self.logger.exception(f"Scrape failed {event_link}")
-        user.close_browser()
+            for a in soup.find("body").find_all("a"):
+                if a.text == "GET TICKETS":
+                    event.price = "?"
+                    event.ticket_url = a.get("href")
+                    break
+            if not event.price == "?":
+                session_id = "RUFBQUFCZ09pMGsxM1cwTjkzMXFTM0ZXN2lTT2RDMG5ISWd0SmxyTTRLZmpGcFZmQS8xNmZocXpIdVU1U015NGJwWlQ1T0E4ZXJGK0RWT2cyNHAybGxtT0x0UT0="
+                url = f"https://tickets.lh-st.com/api/v1/products/{id_}"
+                response = self.get_page(url, {"SessionId": session_id})
+                if response.status_code == 204:
+                    event.price = "Free"
+                data = self.get_page(url, {"SessionId": session_id}).json()
+                event.price = "/".join(
+                    f"${ticket['price']}" for ticket in data["campaigns"]
+                )
+            return event
+        except Exception:
+            self.event_fail(event)
+            return None
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    venue = Venue()
+    venue.scrape()
+    print(venue.last_log)
