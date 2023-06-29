@@ -1,19 +1,12 @@
 # getToTheGig
-WIP<br>
+
 getToTheGig is a program/framework for scraping the event calendars of venues and centralizing them in a database 
 so you can find something to do without having to check all the websites yourself.<br>
-<br>
-Requires Python >= 3.10<br>
-Some of the scrapers require the use of selenium so Firefox and the appropriate web driver needs to be installed as well.<br>
-The web driver should be in your PATH or in the getToTheGig directory.<br>
-It can be obtained [here](https://github.com/mozilla/geckodriver/releases) <br>
 <br>
 After cloning this repository, run the setup.py script.<br>
 Currently all the venues in shows.db are local to Chicago, IL.<br>
 <br>
-To scrape all the venues, simply run the scrape_venues.py script.<br>
-scrape_venues.py has one optional command line argument and it is -t/--threads to set the number of scrapers to run in parallel.<br>
-The default is 10, but you may want to adjust it according to your hardware (parallel selenium instances can eat up a lot of ram).<br>
+To scrape all the venues, simply run the scrape_venues.py script.
 <br>
 <br>
 The scraped events can be viewed using the cli script whats_happening.py<br>
