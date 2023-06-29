@@ -1,8 +1,0 @@
-event_date
-title
-acts
-price
-event_link
-act_links
-info
-genres
