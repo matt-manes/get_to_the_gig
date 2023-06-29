@@ -66,7 +66,7 @@ class GigBased(DataBased):
                 venue.calendar_url,
                 venue.ref_name,
                 venue.date_added,
-                int(venue.scraper_ready),
+                venue.scraper_ready,
             ],
             [
                 "name",
@@ -150,14 +150,17 @@ class GigBased(DataBased):
         * `limit: str | int | None = None`
         """
         rows = self.get_rows("events", *args, **kwargs)
-        return [dacite.from_dict(models.Event, row) for row in rows]
+        return [
+            dacite.from_dict(models.Event, row, dacite.Config(check_types=False))
+            for row in rows
+        ]
 
     def get_venue(self, ref_name: str) -> models.Venue:
         """Return a `Venue` model given a venue's `ref_name`.
         Database connection will be closed after calling this function."""
         row = self.get_rows("venues", {"ref_name": ref_name})[0]
         row["address"] = asdict(dacite.from_dict(models.Address, row))
-        return dacite.from_dict(models.Venue, row)
+        return dacite.from_dict(models.Venue, row, dacite.Config(check_types=False))
 
     def get_venues(self, *args, **kwargs) -> list[models.Venue]:
         """Return a list of `Venue` models.
@@ -174,7 +177,13 @@ class GigBased(DataBased):
         * `limit: str | int | None = None`
         """
         rows = self.get_rows("venues", *args, **kwargs)
-        return [dacite.from_dict(models.Venue, row) for row in rows]
+        venues = []
+        for row in rows:
+            row["address"] = asdict(dacite.from_dict(models.Address, row))
+            venues.append(
+                dacite.from_dict(models.Venue, row, dacite.Config(check_types=False))
+            )
+        return venues
 
     def update_in_the_future(self):
         """Set `in_the_future` column in the events table to `0` for events that have already happened."""
