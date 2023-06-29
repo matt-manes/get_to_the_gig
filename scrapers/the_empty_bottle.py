@@ -1,60 +1,59 @@
-import datetime
+from datetime import datetime
+import json
+
+from bs4 import BeautifulSoup
+from gig_scraper import GigScraper
 from pathier import Pathier
 
-from gig_scraper_engine import GigScraper, get_text
-from seleniumuser import User
+root = Pathier(__file__).parent
+(root.parent).add_to_PATH()
+
+import models
 
 
-class Scraper(GigScraper):
-    def __init__(self):
-        super().__init__(Pathier(__file__))
+# calendar url: https://www.emptybottle.com
+class Venue(GigScraper):
+    @property
+    def name(self) -> str:
+        return Pathier(__file__).stem
 
-    def scrape(self):
-        self.logger.info("Scrape started")
-        user = User(headless=True)
+    def get_events(self) -> list[dict]:
+        url = "https://app.ticketmaster.com/discovery/v2/events.json?size=200&apikey=GmC9AB6l4pDhA5yhg4dgD3G0AEDK8wmL&venueId=KovZpZAId16A&venueId=rZ7HnEZ178O8A&venueId=rZ7HnEZ17a4Af&venueId=KovZ917AEIJ&venueId=KovZ917AEEX&venueId=KovZpZAFJ1EA&venueId=KovZpZAFEFAA&venueId=KovZpaptBe&venueId=KovZpaptYe&venueId=KovZpZAkt67A&venueId=KovZ917AEIJ"
+        response = self.get_page(url)
+        data = response.json()
+        return data["_embedded"]["events"]
+
+    def parse_event(self, data: dict) -> models.Event | None:
         try:
-            url = self.venue_info["calendar_url"]
-            user.get(url)
-            soup = user.get_soup()
-            feed = soup.find("div", attrs={"id": "widget-full-feed"})
-            events = feed.find_all("div", class_="eb-item")
-            for event in events:
-                self.reset_event_details()
-                date_string = event.find("div", class_="date").text
-                time_string = event.find("div", class_="start-time").text
-                self.event_date = datetime.datetime.strptime(
-                    f"{self.today.year} {date_string} {time_string}",
-                    "%Y %a %B %d %I:%M%p",
-                )
-                self.check_event_date_year()
-                self.title = event.find("div", class_="title").text
-                self.acts = "\n".join(
-                    ele.text
-                    for ele in event.find("ul", class_="performing").find_all("li")
-                )
-                self.event_link = (
-                    event.find("a", class_="buy-button")
-                    .get("href")
-                    .replace("#tickets", "")
-                )
-                # TicketWeb has started blocking vpns, so this is prone to fail.
-                try:
-                    user.get(self.event_link)
-                    soup = user.get_soup()
-                    self.price = get_text(
-                        soup.find("div", class_="conversion-bar__panel-info")
-                    )
-                    self.info = get_text(
-                        soup.find("div", class_="has-user-generated-content")
-                    )
-                except Exception as e:
-                    pass
-                self.add_event()
-            self.log_success()
-        except Exception as e:
-            self.logger.exception("Scrape Failed")
-        user.close_browser()
+            event = models.Event.new()
+            event.age_restriction = "21+"
+            event.title = data["name"]
+            event.acts = event.title
+            event.url = data["url"]
+            start = data["dates"]["start"]
+            event.date = datetime.strptime(
+                f"{start['localDate']} {start['localTime']}", "%Y-%m-%d %H:%M:%S"
+            )
+            genre = data["classifications"][0]
+            if "genre" in genre and "subGenre" in genre:
+                event.genres = f"{genre['genre']['name']}/{genre['subGenre']['name']}"
+            elif "genre" in genre:
+                event.genres = genre["genre"]["name"]
+            else:
+                event.genres = genre["segment"]["name"]
+            prices = data["priceRanges"][0]
+            if prices["min"] == prices["max"]:
+                event.price = f"${prices['min']}"
+            else:
+                event.price = f"${prices['min']}-${prices['max']}"
+            return event
+        except Exception:
+            # input(json.dumps(data))
+            self.event_fail(event)
+            return None
 
 
 if __name__ == "__main__":
-    Scraper().scrape()
+    venue = Venue()
+    venue.scrape()
+    print(venue.last_log)
