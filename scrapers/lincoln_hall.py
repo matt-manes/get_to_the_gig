@@ -77,10 +77,11 @@ class Venue(GigScraper):
                 response = self.get_page(url, {"SessionId": session_id})
                 if response.status_code == 204:
                     event.price = "Free"
-                data = self.get_page(url, {"SessionId": session_id}).json()
-                event.price = "/".join(
-                    f"${ticket['price']}" for ticket in data["campaigns"]
-                )
+                else:
+                    data = response.json()
+                    event.price = "/".join(
+                        f"${ticket['price']}" for ticket in data["campaigns"]
+                    )
             return event
         except Exception:
             self.event_fail(event)
