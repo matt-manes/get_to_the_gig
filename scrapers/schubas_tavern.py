@@ -12,13 +12,13 @@ import models
 
 
 # calendar url: https://lh-st.com
-class Venue(lincoln_hall.Venue):
+class VenueScraper(lincoln_hall.VenueScraper):
     @property
     def name(self) -> str:
         return Pathier(__file__).stem
 
 
 if __name__ == "__main__":
-    venue = Venue()
+    venue = VenueScraper()
     venue.scrape()
     print(venue.last_log)

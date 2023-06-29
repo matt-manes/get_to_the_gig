@@ -11,7 +11,7 @@ import models
 
 
 # calendar url: https://cdn5.editmysite.com/app/store/api/v28/editor/users/131312941/sites/715381155365579768/products?per_page=60&categories[]=11eb8686dd0a0704b0c60cc47a2b63cc
-class Venue(GigScraper):
+class VenueScraper(GigScraper):
     @property
     def name(self) -> str:
         return Pathier(__file__).stem
@@ -42,6 +42,6 @@ class Venue(GigScraper):
 
 
 if __name__ == "__main__":
-    venue = Venue()
+    venue = VenueScraper()
     venue.scrape()
     print(venue.last_log)

@@ -12,7 +12,7 @@ import models
 
 
 # calendar url: https://comfortstationlogansquare.org/calendar
-class Venue(GigScraper):
+class VenueScraper(GigScraper):
     @property
     def name(self) -> str:
         return Pathier(__file__).stem
@@ -39,6 +39,6 @@ class Venue(GigScraper):
 
 
 if __name__ == "__main__":
-    venue = Venue()
+    venue = VenueScraper()
     venue.scrape()
     print(venue.last_log)
