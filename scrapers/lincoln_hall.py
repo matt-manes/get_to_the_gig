@@ -1,8 +1,6 @@
-import json
 import re
 from datetime import datetime
 
-from bs4 import BeautifulSoup
 from gig_scraper import GigScraper
 from pathier import Pathier
 

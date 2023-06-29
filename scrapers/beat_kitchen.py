@@ -1,13 +1,15 @@
-from datetime import datetime
+import json
 import re
+from datetime import datetime
+
 from gig_scraper import GigScraper
 from pathier import Pathier
-import json
 
 root = Pathier(__file__).parent
 (root.parent).add_to_PATH()
 
 import models
+
 
 # calendar url: https://www.beatkitchen.com/calendar
 class VenueScraper(GigScraper):

@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
+
 from bs4 import BeautifulSoup
 from gig_scraper import GigScraper
 from pathier import Pathier

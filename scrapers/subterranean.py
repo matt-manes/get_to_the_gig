@@ -1,17 +1,16 @@
-from datetime import datetime
 import re
+from datetime import datetime
+
 import yaml
-from bs4 import BeautifulSoup
 from gig_scraper import GigScraper
 from pathier import Pathier
-from string import punctuation
 
 root = Pathier(__file__).parent
 (root.parent).add_to_PATH()
 
 import models
 
-yaml.load
+
 # calendar url: https://www.subt.net/calendar
 class VenueScraper(GigScraper):
     @property
