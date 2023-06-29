@@ -7,6 +7,7 @@ from pathier import Pathier
 import add_venue
 import models
 from gigbased import GigBased
+import shlex
 
 root = Pathier(__file__).parent
 
@@ -64,6 +65,15 @@ class Gigshell(DBShell):
                 print(
                     f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
                 )
+
+    def do_scraper_ready(self, venues: str):
+        """Set `scraper_ready` to `True` in the database for these venues."""
+        venues = shlex.split(venues)
+        updates = 0
+        with GigBased() as db:
+            for venue in venues:
+                updates += db.update("venues", "scraper_ready", 1, {"name": venue})
+        print(f"Updated {updates} venues.")
 
 
 if __name__ == "__main__":
