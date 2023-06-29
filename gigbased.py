@@ -198,6 +198,11 @@ class GigBased(DataBased):
         venue_dict.pop("date_added")
         return self.count("venues", venue_dict) > 0
 
+    def drop_all_events(self):
+        """Drop all events from `events` table.
+        Doesn't drop the table itself."""
+        self.delete("events", {"": ""}, False)
+
 
 if __name__ == "__main__":
     # This is just to create the db file and/or tables if they don't exist
