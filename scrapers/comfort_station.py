@@ -29,7 +29,7 @@ class Venue(GigScraper):
         try:
             event = models.Event.new()
             event.title = data["title"]
-            event.date = datetime.fromtimestamp(round(data["startDate"] / 1000))
+            event.date = datetime.fromtimestamp(int(data["startDate"] / 1000))
             event.url = f"{self.venue.calendar_url}/{data['urlId']}"
             event.price = "Donations Encouraged"
             return event

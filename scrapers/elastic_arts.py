@@ -27,7 +27,7 @@ class Venue(GigScraper):
     def parse_event(self, data: dict) -> models.Event | None:
         try:
             event = models.Event.new()
-            event.date = datetime.fromtimestamp(round(data["startDate"] / 1000))
+            event.date = datetime.fromtimestamp(int(data["startDate"] / 1000))
             event.title = data["title"]
             event.price = "$15+"
             event.url = f"{self.venue.url}/{data['fullUrl']}"
