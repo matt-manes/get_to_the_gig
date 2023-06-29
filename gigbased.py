@@ -66,6 +66,7 @@ class GigBased(DataBased):
                 venue.calendar_url,
                 venue.ref_name,
                 venue.date_added,
+                int(venue.scraper_ready),
             ],
             [
                 "name",
@@ -77,6 +78,7 @@ class GigBased(DataBased):
                 "calendar_url",
                 "ref_name",
                 "date_added",
+                "scraper_ready",
             ],
         )
 
@@ -117,6 +119,7 @@ class GigBased(DataBased):
                 "calendar_url text",
                 "ref_name text",
                 "date_added timestamp",
+                "scraper_ready int",
             ],
         )
 

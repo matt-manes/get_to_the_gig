@@ -32,6 +32,7 @@ class Venue:
     # Scraper files will be named with this + `.py`
     # The scraper class should also be named this, but camel case
     ref_name: str = ""
+    scraper_ready: bool = False
 
     def __post_init__(self):
         if not self.ref_name:
