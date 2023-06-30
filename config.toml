@@ -3,3 +3,5 @@ backup_before_scrape = true
 drop_future_events = true
 update_in_the_future = true
 drop_all_events = true
+default_event_display_columns = ["venue", "title", "date", "acts", "price", "url"]
+default_event_column_order = ["venue", "date", "title", "acts", "price", "url"]
