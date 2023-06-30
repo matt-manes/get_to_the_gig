@@ -1,9 +1,7 @@
 from datetime import datetime
 from dataclasses import dataclass, asdict
-
 import dacite
 from databased import DataBased
-
 import models
 
 
@@ -11,6 +9,51 @@ class GigBased(DataBased):
     def __init__(self, dbpath="getToTheGig.db"):
         super().__init__(dbpath)
         self.create_tables()
+
+    # Seat |============================ Tables ============================|
+
+    def create_events_table(self):
+        self.create_table(
+            "events",
+            [
+                "venue text",
+                "title text",
+                "date timestamp",
+                "acts text",
+                "price text",
+                "url text",
+                "ticket_url text",
+                "act_urls text",
+                "info text",
+                "age_restriction text",
+                "date_added timestamp",
+                "genres text",
+                "in_the_future int",
+            ],
+        )
+
+    def create_tables(self):
+        self.create_venues_table()
+        self.create_events_table()
+
+    def create_venues_table(self):
+        self.create_table(
+            "venues",
+            [
+                "name text unique",
+                "street text",
+                "city text",
+                "state text",
+                "zip_code text",
+                "url text",
+                "calendar_url text",
+                "ref_name text",
+                "date_added timestamp",
+                "scraper_ready int",
+            ],
+        )
+
+    # Seat ====================================================================
 
     def add_event(self, event: models.Event) -> bool:
         """Add an event to the database.
@@ -82,53 +125,16 @@ class GigBased(DataBased):
             ],
         )
 
-    def create_events_table(self):
-        self.create_table(
-            "events",
-            [
-                "venue text",
-                "title text",
-                "date timestamp",
-                "acts text",
-                "price text",
-                "url text",
-                "ticket_url text",
-                "act_urls text",
-                "info text",
-                "age_restriction text",
-                "date_added timestamp",
-                "genres text",
-                "in_the_future int",
-            ],
-        )
-
-    def create_tables(self):
-        self.create_venues_table()
-        self.create_events_table()
-
-    def create_venues_table(self):
-        self.create_table(
-            "venues",
-            [
-                "name text unique",
-                "street text",
-                "city text",
-                "state text",
-                "zip_code text",
-                "url text",
-                "calendar_url text",
-                "ref_name text",
-                "date_added timestamp",
-                "scraper_ready int",
-            ],
-        )
+    def drop_all_events(self):
+        """Drop all events from `events` table.
+        Doesn't drop the table itself."""
+        self.delete("events", {"": ""}, False)
 
     def drop_future_events(self, venue: models.Venue | None = None):
         """Delete events that haven't happened yet for `venue`.
         If `venue` is not given, the operation will occur on all venues.
 
-        #### :Intention: Avoid adding duplicate events or needing to determine
-        if the event to be added already exists but website information for it has changed.
+        #### :Intention: Avoid adding duplicate events or needing to determine if the event to be added already exists but website information for it has changed.
         Ideally a backup of the database should be made first and this should be called after calling `self.update_in_the_future`."""
         if venue:
             self.delete("events", {"venue": venue.name, "in_the_future": 1})
@@ -197,11 +203,6 @@ class GigBased(DataBased):
         venue_dict = venue.flattened_dict
         venue_dict.pop("date_added")
         return self.count("venues", venue_dict) > 0
-
-    def drop_all_events(self):
-        """Drop all events from `events` table.
-        Doesn't drop the table itself."""
-        self.delete("events", {"": ""}, False)
 
 
 if __name__ == "__main__":
