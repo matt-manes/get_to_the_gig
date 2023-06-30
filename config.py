@@ -25,3 +25,15 @@ class Config:
         """Write the contents of this `datamodel` object to `path`."""
         data = asdict(self)
         Pathier(path).dumps(data)
+
+    def all_chores_off(self):
+        self.backup_before_scrape = False
+        self.drop_future_events = False
+        self.update_in_the_future = False
+        self.drop_all_events = False
+
+    def all_chores_on(self):
+        self.backup_before_scrape = True
+        self.drop_future_events = True
+        self.update_in_the_future = True
+        self.drop_all_events = True
