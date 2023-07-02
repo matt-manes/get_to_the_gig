@@ -14,6 +14,8 @@ class Config:
     drop_all_events: bool
     default_event_display_columns: list[str]
     default_event_column_order: list[str]
+    vacuum_db: bool
+    push_db: bool
 
     @classmethod
     def load(cls, path: Pathish = Pathier(__file__).parent / "config.toml") -> Self:

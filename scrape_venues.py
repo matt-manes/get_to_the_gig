@@ -39,18 +39,24 @@ def prescrape_chores():
     config.dump()
 
 
-def postscrape_chores():
-    config = Config.load()
-    config.all_chores_on()
-    config.dump()
-
-
 def push_db():
     """Push databased to github."""
     git = Git()
     config = Config.load()
     git.commit_files([config.dbpath], "chore: update event calendar")
     git.push()
+
+
+def postscrape_chores():
+    config = Config.load()
+    if config.vacuum_db:
+        with GigBased() as db:
+            print(f"Vacuuming freed up {Pathier.format_bytes(db.vacuum())} of space.")
+    if config.push_db:
+        print("Pushing database to remote...")
+        push_db()
+    config.all_chores_on()
+    config.dump()
 
 
 def scrape(scrapers: list[GigScraper]):
@@ -83,8 +89,6 @@ def main():
         print("Starting scrape...")
         scrape(scrapers)
         print("Scrape finished.")
-        print("Pushing database to remote...")
-        push_db()
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
     finally:
