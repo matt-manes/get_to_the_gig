@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime, timedelta
 from functools import cached_property, wraps
 from typing import Iterable
@@ -50,7 +51,11 @@ class GigScraper:
 
     def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
         """Request `url` and return the `requests.Response` object."""
-        return requests.get(url, headers=get_agent(True) | headers)
+        try:
+            return requests.get(url, headers=get_agent(True) | headers)
+        except Exception as e:
+            time.sleep(1)
+            return requests.get(url, headers=get_agent(True) | headers)
 
     def get_soup(self, url: str, headers: dict[str, str] = {}) -> BeautifulSoup:
         """Request `url` with `headers` and return `BeautifulSoup` object."""
