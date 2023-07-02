@@ -1,13 +1,14 @@
-from gigbased import GigBased
-from pathier import Pathier
 import importlib
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
+
 from gitbetter import Git
-from noiftimer import Timer
+from pathier import Pathier
 from printbuddies import ProgBar
+
 from config import Config
-from datetime import datetime
+from gigbased import GigBased
 
 root = Pathier(__file__).parent
 scrapers_dir = root / "scrapers"
@@ -59,6 +60,19 @@ def postscrape_chores():
     config.dump()
 
 
+def stats(scrapers: list[GigScraper]) -> tuple[int, int]:
+    """Returns a tuple containing total successes and total failures across all scrapers."""
+    successes = 0
+    failures = 0
+    for scraper in scrapers:
+        stats = re.findall(
+            r"with ([0-9]+) successes and ([0-9]+) failures", scraper.last_log
+        )[0]
+        successes += int(stats[0])
+        failures += int(stats[1])
+    return (successes, failures)
+
+
 def scrape(scrapers: list[GigScraper]):
     with ProgBar(len(scrapers)) as bar:
         with ThreadPoolExecutor() as exc:
@@ -69,7 +83,7 @@ def scrape(scrapers: list[GigScraper]):
                 bar.display(prefix=bar.runtime, counter_override=num_complete)
                 time.sleep(1)
             bar.display(prefix=bar.runtime, counter_override=len(threads))
-    print(f"{len(scrapers)} venues scraped in {bar.runtime}.")
+    print(f"{len(scrapers)} venues scraped in {bar.timer.elapsed_str}.")
     justification = max(len(scraper.venue.name) for scraper in scrapers) + 1
     print(
         *[
@@ -78,6 +92,9 @@ def scrape(scrapers: list[GigScraper]):
         ],
         sep="\n",
     )
+    successes, failures = stats(scrapers)
+    print(f"Total successes: {successes}")
+    print(f"Total failures: {failures}")
 
 
 def main():
