@@ -24,7 +24,8 @@ class VenueScraper(GigScraper):
         for div in soup.find_all("div", class_="rhp-event-thumb"):
             try:
                 url = div.find("a").get("href")
-                events.append(url)
+                if url not in events:
+                    events.append(url)
             except Exception as e:
                 pass
         return events
