@@ -118,16 +118,15 @@ class Gigshell(DBShell):
                     else args.days_away[1],
                 )
             )
-            date_clause = f"'{start}' <= date and date <= '{stop}'"
+            date_clause = f"date BETWEEN '{start}' AND '{stop}'"
         venue_clause = (
             1
             if not args.venues
-            else " or ".join(f'venue = "{venue}"' for venue in args.venues)
+            else "venue in (" + ", ".join(f'"{venue}"' for venue in args.venues) + ")"
         )
         config = Config.load()
         columns = ", ".join(config.default_event_column_order)
         query = f"SELECT {columns} FROM events WHERE {venue_clause} AND {date_clause} ORDER BY date;"
-
         with GigBased() as db:
             events = db.query(query)
         print(griddy(events, config.default_event_column_order))
