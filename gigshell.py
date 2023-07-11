@@ -8,6 +8,9 @@ import add_venue
 import models
 from gigbased import GigBased
 import shlex
+from griddle import griddy
+import utilities
+from config import Config
 
 root = Pathier(__file__).parent
 
@@ -33,6 +36,32 @@ def add_venue_parser() -> ArgShellParser:
         help=""" Two letter state abbreviation. """,
     )
     parser.add_argument("-z", "--zipcode", type=str, default="")
+    return parser
+
+
+def events_parser() -> ArgShellParser:
+    with GigBased() as db:
+        venues = [venue.name for venue in db.get_venues()]
+    parser = ArgShellParser()
+    parser.add_argument(
+        "days_away",
+        type=int,
+        nargs="*",
+        default=None,
+        help=""" Show events that are this many days away from now.
+            If only one value is given, only events on that day will be shown.
+            If two are given, events within that range will be shown.
+            If nothing is given, all events will be shown.""",
+    )
+    parser.add_argument(
+        "-v",
+        "--venues",
+        type=str,
+        nargs="*",
+        choices=venues,
+        default=None,
+        help=""" Optional list of venues to filter events with. """,
+    )
     return parser
 
 
@@ -74,6 +103,34 @@ class Gigshell(DBShell):
             for venue in venues:
                 updates += db.update("venues", "scraper_ready", 1, {"name": venue})
         print(f"Updated {updates} venues.")
+
+    @with_parser(events_parser)
+    def do_events(self, args: Namespace):
+        """Show events."""
+        if not args.days_away:
+            date_clause = 1
+        else:
+            start, stop = utilities.get_days_away_daterange(
+                (
+                    args.days_away[0],
+                    args.days_away[0]
+                    if len(args.days_away) == 1
+                    else args.days_away[1],
+                )
+            )
+            date_clause = f"'{start}' <= date and date <= '{stop}'"
+        venue_clause = (
+            1
+            if not args.venues
+            else " or ".join(f'venue = "{venue}"' for venue in args.venues)
+        )
+        config = Config.load()
+        columns = ", ".join(config.default_event_column_order)
+        query = f"SELECT {columns} FROM events WHERE {venue_clause} AND {date_clause} ORDER BY date;"
+
+        with GigBased() as db:
+            events = db.query(query)
+        print(griddy(events, config.default_event_column_order))
 
 
 if __name__ == "__main__":
