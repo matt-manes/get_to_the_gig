@@ -120,9 +120,7 @@ class Gigshell(DBShell):
             )
             date_clause = f"date BETWEEN '{start}' AND '{stop}'"
         venue_clause = (
-            1
-            if not args.venues
-            else "venue in (" + ", ".join(f'"{venue}"' for venue in args.venues) + ")"
+            1 if not args.venues else "venue in ('" + "', '".join(args.venues) + "')"
         )
         config = Config.load()
         columns = ", ".join(config.default_event_column_order)
