@@ -30,9 +30,14 @@ class VenueScraper(GigScraper):
         try:
             event = models.Event.new()
             event.title = data["title"]
-            event.date = datetime.strptime(
-                data["dateTime"], "<span>%a, %b %d %H:%M%p<span>"
-            )
+            try:
+                event.date = datetime.strptime(
+                    data["dateTime"], "<span>%a, %b %d %H:%M%p<span>"
+                )
+            except Exception as e:
+                event.date = datetime.strptime(
+                    data["dateTime"], "<span>%a, %b %d<span>"
+                )
             event.date = event.date.replace(year=2023)
             event = self.check_event_year(event)
             if "lineup" in data:
@@ -41,11 +46,14 @@ class VenueScraper(GigScraper):
                 )
             else:
                 event.acts = event.title
-            event.price = f"${data['tickets'][0]['price']}"
-            if event.price == "$0":
+            if not data["tickets"]:
                 event.price = "Free"
+            else:
+                event.price = f"${data['tickets'][0]['price']}"
+                if event.price == "$0":
+                    event.price = "Free"
             event.url = data["permalink"]
-            event.info = data["description"]
+            event.info = data.get("description")
             return event
         except Exception:
             self.event_fail(event)
