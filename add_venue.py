@@ -31,4 +31,4 @@ def add_venue(venue: models.Venue) -> bool:
     with GigBased() as db:
         if db.venue_in_database(venue):
             raise exceptions.VenueExistsError(venue.name)
-        return db.add_venue(venue)
+        return bool(db.add_venue(venue))

@@ -2,9 +2,9 @@ import argparse
 from datetime import datetime, timedelta
 from pathier import Pathier
 
-from databased import DataBased, data_to_string
+from databased import Databased
 
-from clear_old_events import clear_old_events
+# from clear_old_events import clear_old_events
 from griddle import griddy
 
 root = Pathier(__file__).parent
@@ -52,14 +52,6 @@ def get_args() -> argparse.Namespace:
         "-i", "--info", action="store_true", help="Show event info column in output."
     )
 
-    parser.add_argument(
-        "-sb",
-        "--sort_by",
-        type=str,
-        default="date",
-        help="Sort the output by this column.",
-    )
-
     def get_days_away(day: str) -> int:
         today = datetime.today()
         for i in range(1, 8):
@@ -91,34 +83,30 @@ def get_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = get_args()
-    clear_old_events()
+    # clear_old_events()
     columns_to_return = [
         "date",
         "venue",
         "title",
         "acts",
         "price",
-        "event_link",
+        "url",
     ]
     if args.info:
         columns_to_return.append("info")
-    with DataBased("shows.db") as db:
+    with Databased("getToTheGig.db") as db:
         if not args.venues:
-            future_events = db.get_rows(
-                "events",
-                [("in_the_future", 1)],
-                columns_to_return=columns_to_return,
-                order_by=args.sort_by,
+            future_events = db.select(
+                "events", columns_to_return, where="in_the_future = 1"
             )
         else:
             future_events = [
                 row
                 for venue in args.venues
-                for row in db.get_rows(
+                for row in db.select(
                     "events",
-                    [("in_the_future", 1), ("venue", venue)],
-                    columns_to_return=columns_to_return,
-                    order_by=args.sort_by,
+                    columns_to_return,
+                    where=f"venue = '{venue}' AND in_the_future = 1",
                 )
             ]
     filtered_events = []

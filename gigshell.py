@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from argshell import ArgShellParser, Namespace, with_parser
-from databased import DataBased, DBShell, dbparsers
+from databased import Databased
+from databased.dbshell import DBShell
 from pathier import Pathier
 
 import add_venue
@@ -68,8 +69,8 @@ def events_parser() -> ArgShellParser:
 class Gigshell(DBShell):
     intro = "Starting gigshell (enter help or ? for command info)..."
     prompt = "gigshell>"
-    dbpath: Pathier = Pathier("getToTheGig.db")
-    db = GigBased(dbpath)
+    _dbpath: Pathier = Pathier("getToTheGig.db")
+    db = GigBased(_dbpath)
 
     @with_parser(add_venue_parser)
     def do_add_venue(self, args: Namespace):
@@ -95,13 +96,13 @@ class Gigshell(DBShell):
                     f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
                 )
 
-    def do_scraper_ready(self, venues: str):
+    def do_scraper_ready(self, args: str):
         """Set `scraper_ready` to `True` in the database for these venues."""
-        venues = shlex.split(venues)
+        venues = shlex.split(args)
         updates = 0
         with GigBased() as db:
             for venue in venues:
-                updates += db.update("venues", "scraper_ready", 1, {"name": venue})
+                updates += db.update("venues", "scraper_ready", 1, f"name = '{venue}'")
         print(f"Updated {updates} venues.")
 
     @with_parser(events_parser)
@@ -127,7 +128,7 @@ class Gigshell(DBShell):
         query = f"SELECT {columns} FROM events WHERE {venue_clause} AND {date_clause} ORDER BY date;"
         with GigBased() as db:
             events = db.query(query)
-        print(griddy(events, config.default_event_column_order))
+        print(db.to_grid(events))
 
 
 if __name__ == "__main__":
