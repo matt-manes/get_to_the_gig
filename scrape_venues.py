@@ -20,8 +20,7 @@ def get_scrapers() -> list[GigScraper]:
     """Return a list of scraper objects."""
     with GigBased() as db:
         ref_names = [
-            venue.ref_name
-            for venue in db.get_venues(match_criteria={"scraper_ready": 1})
+            venue.ref_name for venue in db.get_venues(where="scraper_ready = 1")
         ]
     files = [scrapers_dir / f"{ref_name}.py" for ref_name in ref_names]
     return [
