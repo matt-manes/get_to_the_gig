@@ -159,7 +159,7 @@ class GigBased(Databased):
     def get_venue(self, ref_name: str) -> models.Venue:
         """Return a `Venue` model given a venue's `ref_name`.
         Database connection will be closed after calling this function."""
-        row = self.select("venues", where=f"ref_name = ref_name")[0]
+        row = self.select("venues", where=f"ref_name = '{ref_name}'")[0]
         row["address"] = asdict(dacite.from_dict(models.Address, row))
         return dacite.from_dict(models.Venue, row, dacite.Config(check_types=False))
 
