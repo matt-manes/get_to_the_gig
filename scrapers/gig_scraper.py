@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from noiftimer import Timer
 from pathier import Pathier
-from whosyouragent import get_agent
+from whosyouragent import get_agent, get_header
 
 root = Pathier(__file__).parent
 root.parent.add_to_PATH()
@@ -52,10 +52,10 @@ class GigScraper:
     def get_page(self, url: str, headers: dict[str, str] = {}) -> requests.Response:
         """Request `url` and return the `requests.Response` object."""
         try:
-            return requests.get(url, headers=get_agent(True) | headers)
+            return requests.get(url, headers=get_header() | headers)
         except Exception as e:
             time.sleep(1)
-            return requests.get(url, headers=get_agent(True) | headers)
+            return requests.get(url, headers=get_header() | headers)
 
     def get_soup(self, url: str, headers: dict[str, str] = {}) -> BeautifulSoup:
         """Request `url` with `headers` and return `BeautifulSoup` object."""
@@ -111,7 +111,8 @@ class GigScraper:
         e.g. it's currently December and the event is in January,
         but no year listed may result in a datetime for January of this year instead of next year.
 
-        Use of this function assumes the venue removes previous events from their website within 30 days after the event."""
+        Use of this function assumes the venue removes previous events from their website within 30 days after the event.
+        """
         if (datetime.now() - event.date).days > 30:
             event.date = event.date.replace(year=event.date.year + 1)
         return event
