@@ -146,7 +146,7 @@ class GigScraper:
 
     @property
     def last_log(self) -> str:
-        return (root / "logs" / f"{self.name}.log").split()[-1]
+        return (root / "logs" / f"{self.name}.log").split("utf-8")[-1]
 
     def clean(self, text: str) -> str:
         """Strip ` \\n\\r\\t` and remove `"` from `text`."""
