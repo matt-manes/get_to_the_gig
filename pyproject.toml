@@ -18,7 +18,7 @@ Documentation = "https://github.com/matt-manes/get_to_the_gig/tree/main/docs"
 "Source code" = "https://github.com/matt-manes/get_to_the_gig/tree/main/src/get_to_the_gig"
 
 [project.scripts]
-gigshell = "get_to_the_gig.get_to_the_gig:main"
+gigshell = "get_to_the_gig.gigshell:main"
 
 [tool]
 [tool.pytest.ini_options]
