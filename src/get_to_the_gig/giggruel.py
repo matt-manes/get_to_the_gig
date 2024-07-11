@@ -17,7 +17,7 @@ class GigGruel(gruel.Gruel):
         super().__init__(*args, **kwargs)
         self._venue: models.Venue = self._get_venue()
         self.already_added_events: list[models.Event] = []
-        self.new_events: list[models.Event] = []
+        self.newly_added_events: list[models.Event] = []
 
     @property
     def venue(self) -> models.Venue:
@@ -42,6 +42,14 @@ class GigGruel(gruel.Gruel):
         """Defaults to fetching `self.venue.calendar_url`."""
         return self.request(self.venue.calendar_url)
 
+    def add_event_to_db(self, event: models.Event) -> None:
+        try:
+            with Gigbased() as db:
+                db.add_event(event)
+                self.newly_added_events.append(event)
+        except Exception as e:
+            self.logger.error("Error adding event to database.")
+
     @override
     def store_items(self, items: Sequence[models.Event | None]) -> None:
         existing_listings = self.get_existing_listings()
@@ -52,12 +60,7 @@ class GigGruel(gruel.Gruel):
             if event in existing_listings:
                 self.already_added_events.append(event)
             else:
-                try:
-                    with Gigbased() as db:
-                        db.add_event(event)
-                        self.new_events.append(event)
-                except Exception as e:
-                    self.logger.error("Error adding event to database.")
+                self.add_event_to_db(event)
 
 
 # class GigGruel(gruel.Gruel):
