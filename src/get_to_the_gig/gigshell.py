@@ -1,17 +1,14 @@
+import shlex
 from datetime import datetime
 
+import models
+import utilities
 from argshell import ArgShellParser, Namespace, with_parser
+from config import Config
 from databased import Databased
 from databased.dbshell import DBShell
+from gigbased import Gigbased
 from pathier import Pathier
-
-import add_venue
-import models
-from gigbased import GigBased
-import shlex
-from griddle import griddy
-import utilities
-from config import Config
 
 root = Pathier(__file__).parent
 
@@ -41,7 +38,7 @@ def add_venue_parser() -> ArgShellParser:
 
 
 def events_parser() -> ArgShellParser:
-    with GigBased() as db:
+    with Gigbased() as db:
         venues = [venue.name for venue in db.get_venues()]
     parser = ArgShellParser()
     parser.add_argument(
@@ -69,38 +66,38 @@ def events_parser() -> ArgShellParser:
 class Gigshell(DBShell):
     intro = "Starting gigshell (enter help or ? for command info)..."
     prompt = "gigshell>"
-    _dbpath: Pathier = Pathier("getToTheGig.db")
-    db = GigBased(_dbpath)
+    _dbpath: Pathier = root / "data" / "get_to_the_gig.db"
+    db = Gigbased(_dbpath)
 
-    @with_parser(add_venue_parser)
-    def do_add_venue(self, args: Namespace):
-        """Add venue to database."""
-        venue = models.Venue(
-            args.name,
-            models.Address(args.street, args.city, args.state, args.zipcode),
-            args.url,
-            args.calendar_url or args.url,
-            datetime.now(),
-        )
-        try:
-            success_status = add_venue.add_venue(venue)
-        except Exception as e:
-            print(e)
-        else:
-            if not success_status:
-                print(f"ERROR adding venue.\nSee {self.dbpath.stem}.log for details.")
-            else:
-                add_venue.create_from_template(venue)
-                print(f'"{venue.name}" successfully added to database.')
-                print(
-                    f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
-                )
+    # @with_parser(add_venue_parser)
+    # def do_add_venue(self, args: Namespace):
+    #    """Add venue to database."""
+    #    venue = models.Venue(
+    #        args.name,
+    #        models.Address(args.street, args.city, args.state, args.zipcode),
+    #        args.url,
+    #        args.calendar_url or args.url,
+    #        datetime.now(),
+    #    )
+    #    try:
+    #        success_status = add_venue.add_venue(venue)
+    #    except Exception as e:
+    #        print(e)
+    #    else:
+    #        if not success_status:
+    #            print(f"ERROR adding venue.\nSee {self.dbpath.stem}.log for details.")
+    #        else:
+    #            add_venue.create_from_template(venue)
+    #            print(f'"{venue.name}" successfully added to database.')
+    #            print(
+    #                f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
+    #            )
 
     def do_scraper_ready(self, args: str):
         """Set `scraper_ready` to `True` in the database for these venues."""
         venues = shlex.split(args)
         updates = 0
-        with GigBased() as db:
+        with Gigbased() as db:
             for venue in venues:
                 updates += db.update("venues", "scraper_ready", 1, f"name = '{venue}'")
         print(f"Updated {updates} venues.")
@@ -114,9 +111,11 @@ class Gigshell(DBShell):
             start, stop = utilities.get_days_away_daterange(
                 (
                     args.days_away[0],
-                    args.days_away[0]
-                    if len(args.days_away) == 1
-                    else args.days_away[1],
+                    (
+                        args.days_away[0]
+                        if len(args.days_away) == 1
+                        else args.days_away[1]
+                    ),
                 )
             )
             date_clause = f"date BETWEEN '{start}' AND '{stop}'"
@@ -126,7 +125,7 @@ class Gigshell(DBShell):
         config = Config.load()
         columns = ", ".join(config.default_event_column_order)
         query = f"SELECT {columns} FROM events WHERE {venue_clause} AND {date_clause} ORDER BY date;"
-        with GigBased() as db:
+        with Gigbased() as db:
             events = db.query(query)
         print(db.to_grid(events))
 

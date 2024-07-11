@@ -1,4 +1,4 @@
-dbpath = "getToTheGig.db"
+dbpath = "get_to_the_gig.db"
 backup_before_scrape = true
 drop_future_events = true
 update_in_the_future = true

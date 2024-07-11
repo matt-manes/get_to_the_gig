@@ -1,0 +1,33 @@
+[project]
+name = "get_to_the_gig"
+description = ""
+version = "0.0.0"
+dependencies = []
+readme = "README.md"
+keywords = []
+classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License", "Operating System :: OS Independent"]
+requires-python = ">=3.10, <3.12"
+
+[[project.authors]]
+name = "Matt Manes"
+email = "mattmanes@pm.me"
+
+[project.urls]
+Homepage = "https://github.com/matt-manes/get_to_the_gig"
+Documentation = "https://github.com/matt-manes/get_to_the_gig/tree/main/docs"
+"Source code" = "https://github.com/matt-manes/get_to_the_gig/tree/main/src/get_to_the_gig"
+
+[project.scripts]
+gigshell = "get_to_the_gig.get_to_the_gig:main"
+
+[tool]
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+pythonpath = "src"
+
+[tool.hatch.build.targets.sdist]
+exclude = [".coverage", ".pytest_cache", ".vscode", "tests", "docs", "htmlcov", "*.md", "assets", "imgs"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
