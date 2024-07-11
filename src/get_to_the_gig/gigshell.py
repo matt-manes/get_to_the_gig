@@ -69,6 +69,13 @@ class Gigshell(DBShell):
     _dbpath: Pathier = root / "data" / "get_to_the_gig.db"
     db = Gigbased(_dbpath)
 
+    def do_init(self, _: str) -> None:
+        """Initialize database."""
+        sql_dir = root / "sql"
+        with Gigbased(self._dbpath) as db:
+            for file in ("schema.sql", "views.sql", "venues_data.sql"):
+                db.execute_script(sql_dir / file)
+
     # @with_parser(add_venue_parser)
     # def do_add_venue(self, args: Namespace):
     #    """Add venue to database."""
