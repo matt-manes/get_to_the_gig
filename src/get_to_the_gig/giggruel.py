@@ -1,8 +1,10 @@
+from datetime import datetime, timedelta
+
 import gruel
 import models
 from gigbased import Gigbased
 from pathier import Pathier
-from typing_extensions import Any, Sequence, override
+from typing_extensions import Any, Iterable, Sequence, override
 
 root = Pathier(__file__).parent
 
@@ -61,6 +63,41 @@ class GigGruel(gruel.Gruel):
                 self.already_added_events.append(event)
             else:
                 self.add_event_to_db(event)
+
+
+class SquarespaceGruel(GigGruel):
+    def get_collection_id(self, source: Any) -> str:
+        raise NotImplementedError
+
+    def get_squarespace_calendar(
+        self, collection_id: str
+    ) -> Iterable[dict[str, dict[str, Any]]]:
+        """Generator that yields a dictionary of event details for venues
+        using the squarespace endpoint `{venue_website}/api/open/GetItemsByMonth`."""
+        date = datetime.now()
+        counter = 0
+        while True:
+            month_year = f"{date:%m-%Y}"
+            url = gruel.models.Url(
+                f"{self.venue.url}/api/open/GetItemsByMonth?month={month_year}&collectionId={collection_id}"
+            )
+            response = self.request(url.address)
+            # Length of 2 means no content
+            if len(response.content) == 2 or counter >= 12:
+                break
+            yield response.json()
+            date += timedelta(weeks=4)
+            counter += 1
+
+    def get_squarespace_events(self, collection_id: str) -> list[dict[str, Any]]:
+        """Effectively exhaust and flatten `self.get_squarespace_calendar()`.
+
+        `collection_id` should be rendered somewhere in the calendar HTML."""
+        return [
+            event
+            for month in self.get_squarespace_calendar(collection_id)
+            for event in month
+        ]
 
 
 # class GigGruel(gruel.Gruel):
