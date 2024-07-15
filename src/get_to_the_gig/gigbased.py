@@ -1,8 +1,9 @@
 import dacite
-import models
 from databased import Databased
 from pathier import Pathier, Pathish
 from typing_extensions import Any, Callable
+
+from . import models
 
 root = Pathier(__file__).parent
 

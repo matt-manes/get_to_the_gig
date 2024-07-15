@@ -1,14 +1,12 @@
 import shlex
-from datetime import datetime
 
-import models
-import utilities
 from argshell import ArgShellParser, Namespace, with_parser
-from config import Config
-from databased import Databased
 from databased.dbshell import DBShell
-from gigbased import Gigbased
 from pathier import Pathier
+
+from . import utilities
+from .config import Config
+from .gigbased import Gigbased
 
 root = Pathier(__file__).parent
 
@@ -137,5 +135,9 @@ class Gigshell(DBShell):
         print(db.to_grid(events))
 
 
-if __name__ == "__main__":
+def main():
     Gigshell().cmdloop()
+
+
+if __name__ == "__main__":
+    main()

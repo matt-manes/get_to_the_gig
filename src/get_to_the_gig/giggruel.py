@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 
 import gruel
-import models
-from gigbased import Gigbased
 from pathier import Pathier
 from typing_extensions import Any, Iterable, Sequence, override
+
+from . import models
+from .gigbased import Gigbased
 
 root = Pathier(__file__).parent
 
