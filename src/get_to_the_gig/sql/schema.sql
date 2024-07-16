@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS
         street TEXT,
         city TEXT,
         state TEXT,
-        zip_code INTEGER,
+        zip_code TEXT,
         url TEXT NOT NULL,
         calendar_url TEXT NOT NULL,
         date_added TIMESTAMP NOT NULL
