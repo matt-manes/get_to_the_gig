@@ -1,8 +1,9 @@
 import gruel
 from pathier import Pathier
-from typing_extensions import Any, Sequence, override
+from typing_extensions import Any, Sequence, Type, override
 
 from get_to_the_gig import models
+from get_to_the_gig.event_parser import EventParser
 from get_to_the_gig.gigbased import Gigbased
 
 root = Pathier(__file__).parent
@@ -10,7 +11,12 @@ root = Pathier(__file__).parent
 
 # TODO: add methods for dead and resurrected events
 class GigGruel(gruel.Gruel):
-    """Base class for event scrapers."""
+    """
+    Base class for event scrapers.
+
+    Subclasses need to implement:
+        * `def get_parsable_items(self, source: gruel.Response) -> list[Tag]`
+    """
 
     @override
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -24,6 +30,10 @@ class GigGruel(gruel.Gruel):
     def venue(self) -> models.Venue:
         """The venue model for this scraper."""
         return self._venue
+
+    @property
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
 
     def _get_venue(self) -> models.Venue:
         with Gigbased() as db:
@@ -42,6 +52,10 @@ class GigGruel(gruel.Gruel):
     def get_source(self) -> gruel.Response:
         """Defaults to fetching `self.venue.calendar_url`."""
         return self.request(self.venue.calendar_url)
+
+    @override
+    def parse_item(self, item: Any) -> models.Event:
+        return self.event_parser(self.venue, item).parse()
 
     def add_event_to_db(self, event: models.Event) -> None:
         try:
