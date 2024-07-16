@@ -54,6 +54,11 @@ class Event:
     info: str = ""
     age_restriction: str = ""
 
+    def __str__(self) -> str:
+        return "\n".join(
+            f"{field.name}: {getattr(self, field.name)}" for field in fields(self)
+        )
+
     @override
     def __eq__(self, value: object) -> bool:
         # TODO: Make this better, many times the url will change if the lineup changes
@@ -90,8 +95,10 @@ class Event:
     def trim(self) -> None:
         """Trim excess whitespace from string fields and trailing slashes from urls."""
         for field in fields(self):
-            if isinstance(field, str):
-                setattr(self, field, getattr(self, field).strip())
+            value = getattr(self, field.name)
+            if isinstance(value, str):
+                value = value.strip()
+            setattr(self, field.name, value)
         self.url = self.url.strip("/")
         self.ticket_url = self.ticket_url.strip("/")
 
