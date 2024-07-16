@@ -21,7 +21,7 @@ VALUES
         "IL",
         "60618",
         "https://www.beatkitchen.com",
-        "https://www.beatkitchen.com/calendar",
+        "https://www.beatkitchen.com",
         "2023-06-24 19:28:24.628126"
     ),
     (
