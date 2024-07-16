@@ -1,5 +1,6 @@
 from dataclasses import dataclass, fields
 from datetime import datetime
+
 from typing_extensions import Optional, Self, override
 
 
@@ -27,6 +28,19 @@ class Venue:
 
 @dataclass
 class Event:
+    """
+    Fields:
+    * title
+    * date
+    * acts
+    * price
+    * url
+    * ticket_url
+    * act_urls
+    * info
+    * age_restriction
+    """
+
     event_id: int
     venue: Venue
     date_added: datetime
