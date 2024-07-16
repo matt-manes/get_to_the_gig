@@ -1,39 +1,44 @@
 from datetime import datetime
 
-from bs4 import BeautifulSoup
-from gig_scraper import GigScraper
-from pathier import Pathier
+import gruel
+from typing_extensions import Any, Type, override
 
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
+from get_to_the_gig import event_parser, exceptions
+from get_to_the_gig.giggruel import GigGruel
 
-import models
+# calendar url: ${calendar_url}
 
 
-# calendar url:
-class VenueScraper(GigScraper):
+class EventParser(event_parser.EventParser):
     @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
+    @override
+    def item(self) -> Any:  # change `Any` to appropriate type
+        return self._item
 
-    def get_events(self) -> list[dict | BeautifulSoup | str]:
-        response = self.get_calendar()
-        soup = self.as_soup(response)
-        # Extract events
-        events = []
-        return events
+    # Add `_parse_` functions below
+    # def _parse_NAME(self) -> None:
 
-    def parse_event(self, data: dict | BeautifulSoup | str) -> models.Event | None:
-        try:
-            event = models.Event.new()
-            # Populate `event` from `data`.
-            return event
-        except Exception:
-            self.event_fail(event)
-            return None
+
+class VenueScraper(GigGruel):
+    @property
+    @override
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
+
+    # Default requests `venue.calendar_url` and returns the response
+    # Uncomment and override if needed
+    # @override
+    # def get_source(self) -> gruel.Response:
+    #    raise NotImplementedError
+
+    @override
+    def get_parsable_items(self, source: gruel.Response) -> list[Any]:
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
