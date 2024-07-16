@@ -1,11 +1,13 @@
 import gruel
 from pathier import Pathier
+from rich.console import Console
 from typing_extensions import Any, Sequence, Type, override
 
 from get_to_the_gig import models
 from get_to_the_gig.event_parser import EventParser
 from get_to_the_gig.gigbased import Gigbased
 
+console = Console(style="deep_pink4")
 root = Pathier(__file__).parent
 
 
@@ -25,6 +27,7 @@ class GigGruel(gruel.Gruel):
         self._venue: models.Venue = self._get_venue()
         self.already_added_events: list[models.Event] = []
         self.newly_added_events: list[models.Event] = []
+        self.mode = "prod"
 
     @property
     def venue(self) -> models.Venue:
@@ -72,7 +75,11 @@ class GigGruel(gruel.Gruel):
             if not event:
                 continue
             event.trim()
-            if event in existing_listings:
-                self.already_added_events.append(event)
-            else:
-                self.add_event_to_db(event)
+            if self.mode == "dev":
+                console.print()
+                console.print(str(event))
+            elif self.mode == "prod":
+                if event in existing_listings:
+                    self.already_added_events.append(event)
+                else:
+                    self.add_event_to_db(event)
