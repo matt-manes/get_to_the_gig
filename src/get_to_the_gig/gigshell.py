@@ -4,9 +4,9 @@ from argshell import ArgShellParser, Namespace, with_parser
 from databased.dbshell import DBShell
 from pathier import Pathier
 
-from . import utilities
-from .config import Config
-from .gigbased import Gigbased
+from get_to_the_gig import utilities
+from get_to_the_gig.config import Config
+from get_to_the_gig.gigbased import Gigbased
 
 root = Pathier(__file__).parent
 

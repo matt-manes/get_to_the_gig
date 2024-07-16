@@ -3,7 +3,7 @@ from databased import Databased
 from pathier import Pathier, Pathish
 from typing_extensions import Any, Callable
 
-from . import models
+from get_to_the_gig import models
 
 root = Pathier(__file__).parent
 

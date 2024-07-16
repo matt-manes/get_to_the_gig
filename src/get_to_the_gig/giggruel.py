@@ -2,8 +2,8 @@ import gruel
 from pathier import Pathier
 from typing_extensions import Any, Sequence, override
 
-from . import models
-from .gigbased import Gigbased
+from get_to_the_gig import models
+from get_to_the_gig.gigbased import Gigbased
 
 root = Pathier(__file__).parent
 
