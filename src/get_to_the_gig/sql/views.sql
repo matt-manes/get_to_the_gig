@@ -5,7 +5,7 @@ SELECT
     events.venue_id,
     title,
     date,
-    venues.name,
+    venues.name as venue,
     acts,
     price,
     ticket_url,
