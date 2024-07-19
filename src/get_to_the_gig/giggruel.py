@@ -27,7 +27,7 @@ class GigGruel(gruel.Gruel):
         self._venue: models.Venue = self._get_venue()
         self.already_added_events: list[models.Event] = []
         self.newly_added_events: list[models.Event] = []
-        self.mode = "prod"
+        self.test_mode = False
 
     @property
     def venue(self) -> models.Venue:
@@ -75,10 +75,10 @@ class GigGruel(gruel.Gruel):
             if not event:
                 continue
             event.trim()
-            if self.mode == "dev":
+            if self.test_mode:
                 console.print()
                 console.print(str(event))
-            elif self.mode == "prod":
+            else:
                 if event in existing_listings:
                     self.already_added_events.append(event)
                 else:
