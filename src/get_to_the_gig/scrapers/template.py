@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import gruel
+from bs4 import Tag
 from typing_extensions import Any, Type, override
 
 from get_to_the_gig import event_parser, exceptions
