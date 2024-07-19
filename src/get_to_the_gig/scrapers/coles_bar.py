@@ -1,58 +1,91 @@
 import json
 from datetime import datetime
+from functools import cached_property
 
-from gig_scraper import GigScraper
-from pathier import Pathier
+import gruel
+import quickpool
+from bs4 import BeautifulSoup, Tag
+from typing_extensions import Any, Type, override
 
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
-
-import models
+from get_to_the_gig import event_parser, exceptions
+from get_to_the_gig.giggruel import GigGruel
 
 
 # calendar url: https://www.colesbarchicago.com
-class VenueScraper(GigScraper):
+class EventParser(event_parser.EventParser):
     @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
+    @override
+    def item(self) -> BeautifulSoup:  # change `Any` to appropriate type
+        return self._item
 
-    def get_events(self) -> list[str]:
-        response = self.get_calendar()
-        soup = self.as_soup(response)
-        # Extract events
-        events = []
+    @cached_property
+    def event_markup(self) -> dict[str, Any]:
+        for script in self.item.find_all("script"):
+            if script.get("type") == "application/ld+json":
+                return json.loads(script.text)
+        raise exceptions.MissingSourceError(
+            "Cole's Bar: Could not find `application/ld+json` script tag."
+        )
+
+    def _parse_date(self) -> None:
+        self.event.date = datetime.strptime(
+            self.event_markup["startDate"], "%Y-%m-%dT%H:%M:%S-0500"
+        )
+
+    def _parse_title_acts(self) -> None:
+        self.event.title = self.event_markup["name"]
+        self.event.acts = self.event.title
+
+    def _parse_price(self) -> None:
+        self.event.price = f"${self.event_markup['offers']['price']}"
+
+    def _parse_urls(self) -> None:
+        self.event.url = self.event_markup["url"]
+        self.event.ticket_url = self.event_markup["offers"]["url"]
+
+    def _parse_age_restriction(self) -> None:
+        age_div = self.item.find("div", class_="col-12 eventAgeRestriction px-0")
+        if isinstance(age_div, Tag):
+            self.event.age_restriction = age_div.text
+
+
+class VenueScraper(GigGruel):
+    @property
+    @override
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
+
+    def get_event_urls(self, source: gruel.Response) -> list[str]:
+        """Get the event urls from the homepage."""
+        soup = source.get_soup()
+        urls: list[str] = []
         for div in soup.find_all("div", class_="rhp-event-thumb"):
-            try:
-                url = div.find("a").get("href")
-                if url not in events:
-                    events.append(url)
-            except Exception as e:
-                pass
-        return events
+            if not isinstance(div, Tag):
+                continue
+            a = div.find("a")
+            if isinstance(a, Tag):
+                url = str(a.get("href"))
+                if url and url not in urls:
+                    urls.append(url)
+        return urls
 
-    def parse_event(self, url: str) -> models.Event | None:
-        try:
-            event = models.Event.new()
-            event.url = url
-            soup = self.as_soup(self.get_page(url))
-            for script in soup.find_all("script"):
-                if script.get("type") == "application/ld+json":
-                    data = json.loads(script.text)
-                    event.date = datetime.strptime(
-                        data["startDate"], "%Y-%m-%dT%H:%M:%S-0500"
-                    )
-                    event.title = data["name"]
-                    event.acts = event.title
-                    event.price = f"${data['offers']['price']}"
-                    event.ticket_url = data["offers"]["url"]
-                    return event
-            raise Exception("Could not find event markup script tag.")
-        except Exception:
-            self.event_fail(event)
-            return None
+    def get_pages(self, urls: list[str]) -> list[gruel.Response]:
+        """Request and return the responses of `urls`."""
+        pool = quickpool.ThreadPool(
+            [self.request] * len(urls), [(url,) for url in urls], max_workers=3
+        )
+        return pool.execute(self.test_mode)
+
+    @override
+    def get_parsable_items(self, source: gruel.Response) -> list[BeautifulSoup]:
+        urls = self.get_event_urls(source)
+        return [response.get_soup() for response in self.get_pages(urls)]
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
+    # venue.test_mode = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
