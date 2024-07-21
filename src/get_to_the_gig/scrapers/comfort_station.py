@@ -1,43 +1,50 @@
 import re
 from datetime import datetime
 
-from gig_scraper import GigScraper
+import gruel
+from bs4 import Tag
 from pathier import Pathier
+from typing_extensions import Any, Type, override
 
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
-
-import models
-
+from get_to_the_gig import event_parser, exceptions
+from get_to_the_gig.giggruel import GigGruel
+from get_to_the_gig.squarespace import SquarespaceCalendar
 
 # calendar url: https://comfortstationlogansquare.org/calendar
-class VenueScraper(GigScraper):
-    @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
 
-    def get_events(self) -> list[dict]:
-        response = self.get_calendar()
-        collection_id = re.findall(r'data-collection-id="[a-zA-Z0-9]+"', response.text)[
+
+class EventParser(event_parser.EventParser):
+    @property
+    @override
+    def item(self) -> dict[str, Any]:
+        return self._item
+
+    def _parse_all(self) -> None:
+        self.event.title = self.item["title"]
+        self.event.date = datetime.fromtimestamp(int(self.item["startDate"] / 1000))
+        self.event.url = f"{self.event.venue.calendar_url}/{self.item['urlId']}"
+        self.event.price = "Donations Encouraged"
+
+
+class VenueScraper(GigGruel):
+    @property
+    @override
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
+
+    @override
+    def get_parsable_items(self, source: gruel.Response) -> list[dict[str, Any]]:
+        collection_id = re.findall(r'data-collection-id="[a-zA-Z0-9]+"', source.text)[
             0
         ].split('"')[1]
-        # Extract events
-        return self.get_squarespace_events(collection_id)
-
-    def parse_event(self, data: dict) -> models.Event | None:
-        try:
-            event = models.Event.new()
-            event.title = data["title"]
-            event.date = datetime.fromtimestamp(int(data["startDate"] / 1000))
-            event.url = f"{self.venue.calendar_url}/{data['urlId']}"
-            event.price = "Donations Encouraged"
-            return event
-        except Exception:
-            self.event_fail(event)
-            return None
+        return SquarespaceCalendar(
+            gruel.models.Url(self.venue.url), collection_id, self.logger
+        ).get_events()
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
