@@ -15,7 +15,7 @@ from get_to_the_gig.giggruel import GigGruel
 class EventParser(event_parser.EventParser):
     @property
     @override
-    def item(self) -> BeautifulSoup:  # change `Any` to appropriate type
+    def item(self) -> BeautifulSoup:
         return self._item
 
     @cached_property
@@ -23,9 +23,7 @@ class EventParser(event_parser.EventParser):
         for script in self.item.find_all("script"):
             if script.get("type") == "application/ld+json":
                 return json.loads(script.text)
-        raise exceptions.MissingSourceError(
-            "Cole's Bar: Could not find `application/ld+json` script tag."
-        )
+        raise exceptions.MissingElementError("<script type='application/ld+json'>")
 
     def _parse_date(self) -> None:
         self.event.date = datetime.strptime(

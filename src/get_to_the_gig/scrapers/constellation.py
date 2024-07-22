@@ -12,7 +12,7 @@ from get_to_the_gig.giggruel import GigGruel
 class EventParser(event_parser.EventParser):
     @property
     @override
-    def item(self) -> Tag:  # change `Any` to appropriate type
+    def item(self) -> Tag:
         return self._item
 
     # Add `_parse_` functions below
@@ -56,7 +56,9 @@ class VenueScraper(GigGruel):
     def _max_pages(self, soup: BeautifulSoup) -> int:
         pagination = soup.find("ul", class_="seetickets-list-view-pagination")
         if not isinstance(pagination, Tag):
-            raise RuntimeError("Could not find pagination for Constellation.")
+            raise exceptions.MissingElementError(
+                "<ul class='seetickets-list-view-pagination'>"
+            )
         return int(pagination.find_all("li")[-1].get("data-see-ajax-page"))
 
     @override
