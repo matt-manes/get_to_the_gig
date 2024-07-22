@@ -55,7 +55,7 @@ class VenueScraper(GigGruel):
     def event_parser(self) -> Type[EventParser]:
         return EventParser
 
-    def get_event_urls(self, source: gruel.Response) -> list[str]:
+    def _get_event_urls(self, source: gruel.Response) -> list[str]:
         """Get the event urls from the homepage."""
         soup = source.get_soup()
         urls: list[str] = []
@@ -69,17 +69,10 @@ class VenueScraper(GigGruel):
                     urls.append(url)
         return urls
 
-    def get_pages(self, urls: list[str]) -> list[gruel.Response]:
-        """Request and return the responses of `urls`."""
-        pool = quickpool.ThreadPool(
-            [self.request] * len(urls), [(url,) for url in urls], max_workers=3
-        )
-        return pool.execute(self.test_mode)
-
     @override
     def get_parsable_items(self, source: gruel.Response) -> list[BeautifulSoup]:
-        urls = self.get_event_urls(source)
-        return [response.get_soup() for response in self.get_pages(urls)]
+        urls = self._get_event_urls(source)
+        return [response.get_soup() for response in self._get_pages(urls)]
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import gruel
+import quickpool
 from pathier import Pathier
 from rich.console import Console
 from typing_extensions import Any, Sequence, Type, override
@@ -52,7 +53,7 @@ class GigGruel(gruel.Gruel):
         return models.Event.new(self.venue)
 
     @override
-    def get_source(self) -> gruel.Response:
+    def get_source(self) -> Any:
         """Defaults to fetching `self.venue.calendar_url`."""
         return self.request(self.venue.calendar_url)
 
@@ -67,6 +68,13 @@ class GigGruel(gruel.Gruel):
                 self.newly_added_events.append(event)
         except Exception as e:
             self.logger.error("Error adding event to database.")
+
+    def _get_pages(self, urls: list[str]) -> list[gruel.Response]:
+        """Request and return the responses of `urls`."""
+        pool = quickpool.ThreadPool(
+            [self.request] * len(urls), [(url,) for url in urls], max_workers=3
+        )
+        return pool.execute(self.test_mode)
 
     @override
     def store_items(self, items: Sequence[models.Event | None]) -> None:
