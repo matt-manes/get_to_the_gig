@@ -1,47 +1,64 @@
 from datetime import datetime
 
-from bs4 import BeautifulSoup
-from gig_scraper import GigScraper
-from pathier import Pathier
+import gruel
+from typing_extensions import Any, Type, override
 
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
-
-import models
-
+from get_to_the_gig import event_parser
+from get_to_the_gig.giggruel import GigGruel
 
 # calendar url: https://cdn5.editmysite.com/app/store/api/v28/editor/users/131312941/sites/715381155365579768/products?per_page=60&categories[]=11eb8686dd0a0704b0c60cc47a2b63cc
-class VenueScraper(GigScraper):
+
+
+class EventParser(event_parser.EventParser):
     @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
+    @override
+    def item(self) -> dict[str, Any]:
+        return self._item
 
-    def get_events(self) -> list[dict | BeautifulSoup]:
-        response = self.get_calendar()
-        return response.json()["data"]
+    # Add `_parse_` functions below
+    def _parse_date(self) -> None:
+        details = self.item["product_type_details"]
+        self.event.date = datetime.strptime(
+            f"{details['start_date']} {details['start_time']}", "%Y-%m-%d %H:%M %p"
+        )
 
-    def parse_event(self, data: dict | BeautifulSoup) -> models.Event | None:
-        try:
-            event = models.Event.new()
-            details = data["product_type_details"]
-            event.date = datetime.strptime(
-                f"{details['start_date']} {details['start_time']}", "%Y-%m-%d %H:%M %p"
-            )
-            event.title = data["name"]
-            high = data["price"]["high_formatted"]
-            low = data["price"]["low_formatted"]
-            if high == low:
-                event.price = high
-            else:
-                event.price = f"{low}-{high}"
-            event.url = f"{self.venue.url}/{data['site_link']}"
-            return event
-        except Exception:
-            self.event_fail(event)
-            return None
+    def _parse_title(self) -> None:
+        self.event.title = self.item["name"]
+
+    def _parse_price(self) -> None:
+        prices = self.item["price"]
+        high = prices["high_formatted"]
+        low = prices["low_formatted"]
+        if high == low:
+            self.event.price = high
+        else:
+            self.event.price = f"{low}-{high}"
+
+    def _parse_urls(self) -> None:
+        self.event.url = f"{self.event.venue.url}/{self.item['site_link']}"
+        self.event.ticket_url = self.event.url
+
+
+class VenueScraper(GigGruel):
+    @property
+    @override
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
+
+    # Default requests `venue.calendar_url` and returns the response
+    # Uncomment and override if needed
+    # @override
+    # def get_source(self) -> gruel.Response:
+    #    raise NotImplementedError
+
+    @override
+    def get_parsable_items(self, source: gruel.Response) -> list[dict[str, Any]]:
+        return source.json()["data"]
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
