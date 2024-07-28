@@ -1,57 +1,73 @@
 from datetime import datetime
 
-from gig_scraper import GigScraper
-from pathier import Pathier
+import gruel
+from typing_extensions import Any, Type, override
 
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
-
-import models
-
+from get_to_the_gig import event_parser, exceptions
+from get_to_the_gig.giggruel import GigGruel
 
 # calendar url: https://www.emptybottle.com
-class VenueScraper(GigScraper):
+
+
+class EventParser(event_parser.EventParser):
     @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
+    @override
+    def item(self) -> dict[str, Any]:  # change `Any` to appropriate type
+        return self._item
 
-    def get_events(self) -> list[dict]:
-        url = "https://app.ticketmaster.com/discovery/v2/events.json?size=200&apikey=GmC9AB6l4pDhA5yhg4dgD3G0AEDK8wmL&venueId=KovZpZAId16A&venueId=rZ7HnEZ178O8A&venueId=rZ7HnEZ17a4Af&venueId=KovZ917AEIJ&venueId=KovZ917AEEX&venueId=KovZpZAFJ1EA&venueId=KovZpZAFEFAA&venueId=KovZpaptBe&venueId=KovZpaptYe&venueId=KovZpZAkt67A&venueId=KovZ917AEIJ"
-        response = self.get_page(url)
-        data = response.json()
-        return data["_embedded"]["events"]
+    # Add `_parse_` functions below
+    def _parse_title(self) -> None:
+        self.event.title = self.item["name"]
 
-    def parse_event(self, data: dict) -> models.Event | None:
-        try:
-            event = models.Event.new()
-            event.age_restriction = "21+"
-            event.title = data["name"]
-            event.acts = event.title
-            event.url = data["url"]
-            start = data["dates"]["start"]
-            event.date = datetime.strptime(
-                f"{start['localDate']} {start['localTime']}", "%Y-%m-%d %H:%M:%S"
-            )
-            genre = data["classifications"][0]
-            if "genre" in genre and "subGenre" in genre:
-                event.genres = f"{genre['genre']['name']}/{genre['subGenre']['name']}"
-            elif "genre" in genre:
-                event.genres = genre["genre"]["name"]
-            else:
-                event.genres = genre["segment"]["name"]
-            prices = data["priceRanges"][0]
-            if prices["min"] == prices["max"]:
-                event.price = f"${prices['min']}"
-            else:
-                event.price = f"${prices['min']}-${prices['max']}"
-            return event
-        except Exception:
-            # input(json.dumps(data))
-            self.event_fail(event)
-            return None
+    def _parse_url(self) -> None:
+        self.event.url = self.item["url"]
+        self.event.ticket_url = self.event.url
+
+    def _parse_acts(self) -> None:
+        self.event.acts = self.item["name"]
+
+    def _parse_date(self) -> None:
+        start = self.item["dates"]["start"]
+        self.event.date = datetime.strptime(
+            f"{start['localDate']} {start['localTime']}", "%Y-%m-%d %H:%M:%S"
+        )
+
+    def _parse_price(self) -> None:
+        prices = self.item["priceRanges"][0]
+        if prices["min"] == prices["max"]:
+            self.event.price = f"${prices['min']:.2f}"
+        else:
+            self.event.price = f"${prices['min']:.2f}-${prices['max']:.2f}"
+
+    def _parse_age_restriction(self) -> None:
+        self.event.age_restriction = "21+"
+
+
+class VenueScraper(GigGruel):
+    @property
+    @override
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
+
+    @property
+    def api_url(self) -> str:
+        return "https://app.ticketmaster.com/discovery/v2/events.json?size=200&apikey=GmC9AB6l4pDhA5yhg4dgD3G0AEDK8wmL&venueId=KovZpZAId16A&venueId=rZ7HnEZ178O8A&venueId=rZ7HnEZ17a4Af&venueId=KovZ917AEIJ&venueId=KovZ917AEEX&venueId=KovZpZAFJ1EA&venueId=KovZpZAFEFAA&venueId=KovZpaptBe&venueId=KovZpaptYe&venueId=KovZpZAkt67A&venueId=KovZ917AEIJ"
+
+    # Default requests `venue.calendar_url` and returns the response
+    # Uncomment and override if needed
+    @override
+    def get_source(self) -> gruel.Response:
+        return self.request(self.api_url)
+
+    @override
+    def get_parsable_items(self, source: gruel.Response) -> list[dict[str, Any]]:
+        return source.json()["_embedded"]["events"]
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
+    # venue.test_mode = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
