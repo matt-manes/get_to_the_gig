@@ -43,8 +43,10 @@ class EventParser(event_parser.EventParser):
 
     def _parse_age_restriction(self) -> None:
         age_div = self.item.find("div", class_="col-12 eventAgeRestriction px-0")
-        if isinstance(age_div, Tag):
-            self.event.age_restriction = age_div.text
+        if not isinstance(age_div, Tag):
+            self.logger.warning("Could not find age restriction.")
+            return
+        self.event.age_restriction = age_div.text
 
 
 class VenueScraper(GigGruel):

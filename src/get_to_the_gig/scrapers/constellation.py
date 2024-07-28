@@ -19,22 +19,27 @@ class EventParser(event_parser.EventParser):
     def _parse_title_urls(self) -> None:
         title_p = self.item.find("p", class_="fs-18 bold mb-12 title")
         if not isinstance(title_p, Tag):
+            self.logger.warning("Could not find title element.")
             return
         self.event.title = title_p.text
         self.event.acts = self.event.title
         a = title_p.find("a")
-        if isinstance(a, Tag):
-            self.event.url = str(a.get("href"))
-            self.event.ticket_url = self.event.url
+        if not isinstance(a, Tag):
+            self.logger.warning("Could not find event/ticket urls.")
+            return
+        self.event.url = str(a.get("href"))
+        self.event.ticket_url = self.event.url
 
     def _parse_date(self) -> None:
         time_span = self.item.find("span", class_="see-showtime")
         if not isinstance(time_span, Tag):
-            raise RuntimeError(f"Could not find start time for Constellation.")
+            self.logger.warning("Could not find event time element.")
+            return
         time = time_span.text
         date_p = self.item.find("p", class_="fs-18 bold mt-1r date")
         if not isinstance(date_p, Tag):
-            raise RuntimeError("Could not find start date for Constellation.")
+            self.logger.warning("Could not find event date element.")
+            return
         date = date_p.text
         # 'Sat Jul 27 8:30PM'
         self.event.date = datetime.strptime(f"{date} {time}", "%a %b %d %I:%M%p")
@@ -43,8 +48,10 @@ class EventParser(event_parser.EventParser):
 
     def _parse_price(self) -> None:
         price_span = self.item.find("span", class_="price")
-        if isinstance(price_span, Tag):
-            self.event.price = price_span.text
+        if not isinstance(price_span, Tag):
+            self.logger.warning("Could not find price element.")
+            return
+        self.event.price = price_span.text
 
 
 class VenueScraper(GigGruel):

@@ -59,7 +59,7 @@ class GigGruel(gruel.Gruel):
 
     @override
     def parse_item(self, item: Any) -> models.Event:
-        return self.event_parser(self.venue, item).parse()
+        return self.event_parser(self.venue, item, self.logger).parse()
 
     def add_event_to_db(self, event: models.Event) -> None:
         try:

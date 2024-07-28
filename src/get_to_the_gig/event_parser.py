@@ -1,3 +1,4 @@
+import loggi
 from typing_extensions import Any
 
 from get_to_the_gig import models
@@ -16,9 +17,10 @@ class EventParser:
         * `def _parse_acts(self)->None` to parse and store the acts into `self.event`
     """
 
-    def __init__(self, venue: models.Venue, item: Any):
+    def __init__(self, venue: models.Venue, item: Any, logger: loggi.Logger):
         self.event = models.Event.new(venue)
         self._item = item
+        self.logger = logger
 
     @property
     def item(self) -> Any:

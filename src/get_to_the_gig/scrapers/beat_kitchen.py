@@ -17,14 +17,17 @@ class EventParser(event_parser.EventParser):
 
     def _parse_title_tag(self) -> None:
         a_event_title = self.item.find("a", attrs={"target": "_blank"})
-        if isinstance(a_event_title, Tag):
-            self.event.title = a_event_title.text
-            self.event.ticket_url = a_event_title.attrs["href"]
-            self.event.url = self.event.ticket_url
+        if not isinstance(a_event_title, Tag):
+            self.logger.warning("Could not find title element.")
+            return
+        self.event.title = a_event_title.text
+        self.event.ticket_url = a_event_title.attrs["href"]
+        self.event.url = self.event.ticket_url
 
     def _parse_acts(self) -> None:
         p_headliners = self.item.find("p", class_="fs-12 headliners")
         if not isinstance(p_headliners, Tag):
+            self.logger.warning("Could not find headliners element.")
             return
         headliner = p_headliners.text.strip()
         p_supporting = self.item.find("p", class_="fs-12 supporting-talent")
@@ -36,6 +39,7 @@ class EventParser(event_parser.EventParser):
     def _parse_date(self) -> None:
         p_event_date = self.item.find("p", class_="fs-18 bold mt-1r event-date")
         if not isinstance(p_event_date, Tag):
+            self.logger.warning("Could not find date element.")
             return
         date = p_event_date.text
         # "day-name-abbrev month-name-abbbrev day-digit"
@@ -55,8 +59,10 @@ class EventParser(event_parser.EventParser):
 
     def _parse_age_restriction(self) -> None:
         span_ages = self.item.find("span", class_="ages")
-        if isinstance(span_ages, Tag):
-            self.event.age_restriction = span_ages.text.strip(", ")
+        if not isinstance(span_ages, Tag):
+            self.logger.warning("Could not find age restriction element.")
+            return
+        self.event.age_restriction = span_ages.text.strip(", ")
 
 
 class VenueScraper(GigGruel):
