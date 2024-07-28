@@ -8,7 +8,7 @@ class EventParser:
     """Parse an event into an event model by subclassing this class
     and adding methods that have `_parse_` prefixed to their name.
 
-    All of these methods will be called sequentially when `parse()` is called.
+    All of these methods will be called sequentially in the order they are defined when `parse()` is called.
 
     These methods should take no arguments and return nothing.
 
@@ -29,14 +29,11 @@ class EventParser:
         Override to specify type annotation."""
         return self._item
 
-    def _loop_parsers(self) -> None:
+    def parse(self) -> models.Event:
         """Loop over instance and call any methods that start with `_parse_`.
 
         These methods should take no arguments and return `None`."""
         for attr in self.__dir__():
             if attr.startswith("_parse_"):
                 getattr(self, attr)()
-
-    def parse(self) -> models.Event:
-        self._loop_parsers()
         return self.event
