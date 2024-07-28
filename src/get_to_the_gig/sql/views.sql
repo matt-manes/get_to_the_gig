@@ -11,7 +11,7 @@ SELECT
     ticket_url,
     events.date_added,
     CASE
-        WHEN CAST(JULIANDAY ('now') - JULIANDAY (date) AS INT) THEN 1
+        WHEN CAST(JULIANDAY (date) - JULIANDAY ('now') AS INT) >= 0 THEN 1
         ELSE 0
     END in_the_future
 FROM
