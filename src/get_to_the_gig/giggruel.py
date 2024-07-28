@@ -2,6 +2,7 @@ import gruel
 import quickpool
 from pathier import Pathier
 from rich.console import Console
+from rich.rule import Rule
 from typing_extensions import Any, Sequence, Type, override
 
 from get_to_the_gig import models
@@ -86,7 +87,7 @@ class GigGruel(gruel.Gruel):
                 continue
             event.trim()
             if self.test_mode:
-                console.print()
+                console.print(Rule())
                 console.print(str(event))
             else:
                 if event in existing_listings:
