@@ -1,66 +1,89 @@
 from datetime import datetime
 
-from gig_scraper import GigScraper
-from pathier import Pathier
+import gruel
+from bs4 import Tag
+from typing_extensions import Any, Type, override
 
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
-
-import models
-
+from get_to_the_gig import event_parser, exceptions
+from get_to_the_gig.giggruel import GigGruel
 
 # calendar url: https://sleeping-village.com/events
-class VenueScraper(GigScraper):
+
+
+class EventParser(event_parser.EventParser):
     @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
+    @override
+    def item(self) -> dict[str, Any]:
+        return self._item
 
-    def get_events(self) -> list[dict]:
-        events = []
-        for i in range(1, 6):
-            events.extend(
-                self.get_page(
-                    f"https://sleeping-village.com/api/plot/v1/listings?page={i}"
-                ).json()
-            )
-        # input(events)
-        return events
+    # Add `_parse_` functions below
+    def _parse_urls(self) -> None:
+        self.event.url = self.item["permalink"].strip("/")
+        if "ticket" in self.item:
+            self.event.ticket_url = self.item["ticket"]["link"]
+        else:
+            self.event.ticket_url = self.event.url
 
-    def parse_event(self, data: dict) -> models.Event | None:
+    def _parse_title(self) -> None:
+        self.event.title = self.item["title"]
+
+    def _parse_date(self) -> None:
         try:
-            event = models.Event.new()
-            event.title = data["title"]
-            try:
-                event.date = datetime.strptime(
-                    data["dateTime"], "<span>%a, %b %d %H:%M%p<span>"
-                )
-            except Exception as e:
-                event.date = datetime.strptime(
-                    data["dateTime"], "<span>%a, %b %d<span>"
-                )
-            event.date = event.date.replace(year=2023)
-            event = self.check_event_year(event)
-            if "lineup" in data:
-                event.acts = ", ".join(
-                    act["title"] for act in data["lineup"]["standard"]
-                )
-            else:
-                event.acts = event.title
-            if not data["tickets"]:
-                event.price = "Free"
-            else:
-                event.price = f"${data['tickets'][0]['price']}"
-                if event.price == "$0":
-                    event.price = "Free"
-            event.url = data["permalink"]
-            event.info = data.get("description")
-            return event
-        except Exception:
-            self.event_fail(event)
-            return None
+            self.event.date = datetime.strptime(
+                self.item["dateTime"], "<span>%a, %b %d %H:%M%p<span>"
+            )
+        except Exception as e:
+            self.event.date = datetime.strptime(
+                self.item["dateTime"], "<span>%a, %b %d<span>"
+            )
+        self.event.date = self.event.date.replace(year=datetime.now().year)
+        self.event.validate_year()
+
+    def _parse_acts(self) -> None:
+        if "lineup" in self.item:
+            self.event.acts = ", ".join(
+                act["title"] for act in self.item["lineup"]["standard"]
+            )
+
+    def _parse_price(self) -> None:
+        self.event.price = self.item["fromPrice"].removeprefix("Tickets from ")
+
+    def _parse_age_restriction(self) -> None:
+        self.event.age_restriction = "21+"
+
+
+class VenueScraper(GigGruel):
+    @property
+    @override
+    def event_parser(self) -> Type[EventParser]:
+        return EventParser
+
+    # Default requests `venue.calendar_url` and returns the response
+    # Uncomment and override if needed
+    @override
+    def get_source(self) -> list[gruel.Response]:
+        responses: list[gruel.Response] = []
+        api_url = "https://sleeping-village.com/api/plot/v1/listings?currentpage="
+        page = 1
+        while True:
+            response = self.request(api_url + str(page))
+            if response.text == "[]" or page > 12:
+                return responses
+            responses.append(response)
+            page += 1
+
+    @override
+    def get_parsable_items(self, source: list[gruel.Response]) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        for response in source:
+            items.extend(response.json())
+        return items
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
+    # venue.test_mode = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
