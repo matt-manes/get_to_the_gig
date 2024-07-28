@@ -1,18 +1,18 @@
+# type: ignore
 import lincoln_hall
-from pathier import Pathier
-
-root = Pathier(__file__).parent
-(root.parent).add_to_PATH()
 
 
 # calendar url: https://lh-st.com
-class VenueScraper(lincoln_hall.VenueScraper):
-    @property
-    def name(self) -> str:
-        return Pathier(__file__).stem
+class EventParser(lincoln_hall.EventParser): ...
+
+
+class VenueScraper(lincoln_hall.VenueScraper): ...
 
 
 if __name__ == "__main__":
     venue = VenueScraper()
+    venue.show_parse_items_prog_bar = True
+    # venue.test_mode = True
     venue.scrape()
-    print(venue.last_log)
+    print(f"{venue.success_count=}")
+    print(f"{venue.fail_count=}")
