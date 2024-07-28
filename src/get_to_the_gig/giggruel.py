@@ -69,10 +69,12 @@ class GigGruel(gruel.Gruel):
         except Exception as e:
             self.logger.error("Error adding event to database.")
 
-    def _get_pages(self, urls: list[str]) -> list[gruel.Response]:
-        """Request and return the responses of `urls`."""
+    def _get_pages(self, urls: list[str], max_workers: int = 5) -> list[gruel.Response]:
+        """Multithreaded request and return the responses of `urls`."""
         pool = quickpool.ThreadPool(
-            [self.request] * len(urls), [(url,) for url in urls], max_workers=3
+            [self.request] * len(urls),
+            [(url,) for url in urls],
+            max_workers=max_workers,
         )
         return pool.execute(self.test_mode)
 
