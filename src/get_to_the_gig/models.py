@@ -66,8 +66,7 @@ class Event:
         # then `venue_id` and `date` should be sufficient.
         if isinstance(value, self.__class__):
             return (
-                self.venue.venue_id == value.venue.venue_id
-                and self.date == value.date
+                self.date == value.date
                 and (self.url == value.url)
                 and (self.ticket_url == value.ticket_url)
             )
