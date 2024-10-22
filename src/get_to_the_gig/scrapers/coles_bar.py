@@ -26,9 +26,14 @@ class EventParser(event_parser.EventParser):
         raise exceptions.MissingElementError("<script type='application/ld+json'>")
 
     def _parse_date(self) -> None:
-        self.event.date = datetime.strptime(
-            self.event_markup["startDate"], "%Y-%m-%dT%H:%M:%S-0500"
-        )
+        try:
+            self.event.date = datetime.strptime(
+                self.event_markup["startDate"], "%Y-%m-%dT%H:%M:%S-0500"
+            )
+        except Exception as e:
+            self.event.date = datetime.strptime(
+                self.event_markup["startDate"], "%Y-%m-%dT%H:%M:%S-0600"
+            )
 
     def _parse_title_acts(self) -> None:
         self.event.title = self.event_markup["name"]
