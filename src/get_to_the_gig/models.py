@@ -116,3 +116,14 @@ class Event:
             return
         if (datetime.now() - self.date).days > 30:
             self.date = self.date.replace(year=self.date.year + 1)
+
+
+@dataclass
+class ScrapeResult:
+    venue: Venue
+    successes: int
+    failures: int
+    new_events: int
+
+    def __str__(self) -> str:
+        return f"{self.venue.name} | successes: {self.successes} | failures: {self.failures} | new events: {self.new_events}"
