@@ -1,9 +1,0 @@
-dbpath = "get_to_the_gig.db"
-backup_before_scrape = true
-drop_future_events = true
-update_in_the_future = true
-drop_all_events = true
-default_event_display_columns = ["venue", "title", "date", "acts", "price", "url"]
-default_event_column_order = ["venue", "date", "title", "acts", "price", "url"]
-vacuum_db = true
-push_db = true
