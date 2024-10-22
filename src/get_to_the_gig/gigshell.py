@@ -1,11 +1,10 @@
-import shlex
+import sys
 
 from argshell import ArgShellParser, Namespace, with_parser
 from databased.dbshell import DBShell
 from pathier import Pathier
 
 from get_to_the_gig import utilities
-from get_to_the_gig.config import Config
 from get_to_the_gig.gigbased import Gigbased
 
 root = Pathier(__file__).parent
@@ -74,38 +73,20 @@ class Gigshell(DBShell):
             for file in ("schema.sql", "views.sql", "venues_data.sql"):
                 db.execute_script(sql_dir / file)
 
-    # @with_parser(add_venue_parser)
-    # def do_add_venue(self, args: Namespace):
-    #    """Add venue to database."""
-    #    venue = models.Venue(
-    #        args.name,
-    #        models.Address(args.street, args.city, args.state, args.zipcode),
-    #        args.url,
-    #        args.calendar_url or args.url,
-    #        datetime.now(),
-    #    )
-    #    try:
-    #        success_status = add_venue.add_venue(venue)
-    #    except Exception as e:
-    #        print(e)
-    #    else:
-    #        if not success_status:
-    #            print(f"ERROR adding venue.\nSee {self.dbpath.stem}.log for details.")
-    #        else:
-    #            add_venue.create_from_template(venue)
-    #            print(f'"{venue.name}" successfully added to database.')
-    #            print(
-    #                f'Template scraper class has been generated and is located at "scrapers/{venue.ref_name}.py".'
-    #            )
+    def do_scrape(self, venue_ref: str):
+        """Run the scrape file for the given `venue_ref`."""
+        path = root / "scrapers" / f"{venue_ref}.py"
+        if not path.exists():
+            self.console.print(f"No file found for venue ref '{venue_ref}'.")
+            return
+        path.execute(sys.executable)
 
-    def do_scraper_ready(self, args: str):
-        """Set `scraper_ready` to `True` in the database for these venues."""
-        venues = shlex.split(args)
-        updates = 0
-        with Gigbased() as db:
-            for venue in venues:
-                updates += db.update("venues", "scraper_ready", 1, f"name = '{venue}'")
-        print(f"Updated {updates} venues.")
+    def do_build_views(self, _: str):
+        """Drop views from database and execute the `views.sql` script."""
+        with Gigbased(self._dbpath) as db:
+            for view in db.views:
+                db.query(f"DROP VIEW {view};")
+            db.execute_script(root / "sql" / "views.sql")
 
     @with_parser(events_parser)
     def do_events(self, args: Namespace):
@@ -125,14 +106,21 @@ class Gigshell(DBShell):
             )
             date_clause = f"date BETWEEN '{start}' AND '{stop}'"
         venue_clause = (
-            1 if not args.venues else "venue in ('" + "', '".join(args.venues) + "')"
+            "1"
+            if not args.venues
+            else "venue IN (" '"' + '","'.join(args.venues) + '")'
         )
-        config = Config.load()
-        columns = ", ".join(config.default_event_column_order)
-        query = f"SELECT {columns} FROM events WHERE {venue_clause} AND {date_clause} ORDER BY date;"
+        columns = "*"
+        query = f"SELECT {columns} FROM events_view WHERE {venue_clause} AND {date_clause} ORDER BY date;"
         with Gigbased() as db:
             events = db.query(query)
-        print(db.to_grid(events))
+        self.display(events)
+
+    def do_today(self, _: str):
+        """Show events occuring today."""
+        with Gigbased() as db:
+            events = db.select("today")
+        self.display(events)
 
 
 def main():
