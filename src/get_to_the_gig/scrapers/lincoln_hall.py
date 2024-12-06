@@ -58,19 +58,15 @@ class EventParser(event_parser.EventParser):
         return f"https://tickets.lh-st.com/api/v1/products/{self.id_}"
 
     @cached_property
-    def yoast_schema(self) -> dict[Any, Any]:
-        script = self.item.find(
-            "script", class_="yoast-schema-graph", attrs={"type": "application/ld+json"}
-        )
+    def schema(self) -> dict[Any, Any]:
+        script = self.item.find("script", attrs={"type": "application/ld+json"})
         if not isinstance(script, Tag):
-            raise exceptions.MissingElementError(
-                "<script type='application/ld+json' class='yoast-schema-graph'"
-            )
+            raise exceptions.MissingElementError("<script type='application/ld+json'")
         return json.loads(script.text)
 
     # Add `_parse_` functions below
     def _parse_url(self) -> None:
-        self.event.url = self.yoast_schema["@graph"][0]["url"].strip("/")
+        self.event.url = self.schema["@graph"][0]["url"].strip("/")
 
     def _parse_title(self) -> None:
         header_div = self.item.find("div", class_="event-header")
